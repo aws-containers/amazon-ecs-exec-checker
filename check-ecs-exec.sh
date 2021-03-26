@@ -131,7 +131,7 @@ describedTaskJson=$(${AWS_CLI_BIN} ecs describe-tasks \
   --output json)
 executeCommandEnabled=$(echo "${describedTaskJson}" | jq -r ".tasks[0].enableExecuteCommand")
 if [[ "x${executeCommandEnabled}" = "xnull" ]]; then
-  printf "${COLOR_RED}Pre-flight check failed: ECS exec requires the AWS CLI v1.19.28/v2.1.30 or later.\n\
+  printf "${COLOR_RED}Pre-flight check failed: ECS Exec requires the AWS CLI v1.19.28/v2.1.30 or later.\n\
 Please update the AWS CLI and try again?\n\
   For v2: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html\n\
   For v1: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv1.html\n"
