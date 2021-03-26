@@ -50,7 +50,7 @@ The `check-ecs-exec.sh` shows the results with three text colors, 🟢(Green), �
 
 1. 🟢(Green) - The configuration or the status is okay.
 2. 🟡(Yellow) - The configuration or the status should or would be recommended to fix, but you can use ECS Exec without fixing them.
-3. 🔴(Red) - You need to fix those results to use ECS exec.
+3. 🔴(Red) - You need to fix those results before using ECS Exec.
 
 In the following screenshot for instance, we need to install the Session Manager plugin and give required permissions to the task role at least, but we can ignore the audit-logging configuration.
 
@@ -66,7 +66,7 @@ Install the `jq` command. See [the official documentation](https://stedolan.gith
 2. **_Pre-flight check failed: `aws` command is missing_**  
 Install the latest AWS CLI. See [the official documentation for the AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) or [the official documentation for the AWS CLI v1](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv1.html) for the details and how to install.
 
-3. **_Pre-flight check failed: ECS exec requires the AWS CLI v1.19.28/v2.1.30 or later_**  
+3. **_Pre-flight check failed: ECS Exec requires the AWS CLI v1.19.28/v2.1.30 or later_**  
 Upgrade to the latest AWS CLI. See [the official documentation for the AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) or [the official documentation for the AWS CLI v1](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv1.html) for the details and how to upgrade.
 
 4. **_Session Manager Plugin | Missing_**  
@@ -79,13 +79,13 @@ The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use th
 The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use the `kms:GenerateDataKey` API with the given KMS Key ID which you're using for the logging and auditing configuration for ECS exec. See the "[IAM permissions required for encryption using your own KMS customer master key (CMK)](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) section under the "Logging and Auditing using ECS Exec" section in the official documenation to add the required permission to the IAM user/role.
 
 7. **_Platform Version | 1.3.0 (Required: >= 1.4.0)_**  
-On AWS Fargate, `ECS exec` requires the Platform version 1.4.0 or newer. If your ECS task is part of an ECS service, then you can update the platform version by specifying the `PlatformVersion` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `PlatformVersion` parameter specified for the `RunTask` API. See also [the migration guide from the previous PVs](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#platform-version-migration).
+On AWS Fargate, `ECS Exec` requires the Platform version 1.4.0 or newer. If your ECS task is part of an ECS service, then you can update the platform version by specifying the `PlatformVersion` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `PlatformVersion` parameter specified for the `RunTask` API. See also [the migration guide from the previous PVs](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#platform-version-migration).
 
 8. **_ECS Agent Version | x.y.z (Required: >= 1.50.2)_**  
 You need to update the version of the ECS Container Agent for your EC2 instance where your ECS task runs. See [the official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-update.html) for the details and how to update.
 
 9. **_Exec Enabled for Task | NO_**  
-You need to enable the ECS exec feature for your ECS service or your ECS standalone task. If your ECS task is part of an ECS service, then you can update the ECS by specifying the `EnableExecuteCommand` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `EnableExecuteCommand` parameter specified for the `RunTask` API.
+You need to enable the ECS Exec feature for your ECS service or your ECS standalone task. If your ECS task is part of an ECS service, then you can update the ECS by specifying the `EnableExecuteCommand` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `EnableExecuteCommand` parameter specified for the `RunTask` API.
 
 10. **_Managed Agent Status | STOPPED (Reason: stopped-reason-here)_**  
 The managed agent for a container in your Task has stopped for some reasons. If you see this error again and again even after re-running your ECS task, then make sure you have other results from `check-ecs-exec.sh` are all green.
