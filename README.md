@@ -58,45 +58,48 @@ Note that it shows "SSM PrivateLink" at the bottom as a 🟡(yellow) result, but
 
 [![example-result](example-result.png)](example-result.png)
 
-## Reference - How to handle 🔴(Red) items
+## Reference - How to handle 🔴(Red) and 🟡(Yellow) items
 
-1. **_Pre-flight check failed: `jq` command is missing_**  
+1. **_🔴 Pre-flight check failed: `jq` command is missing_**  
 Install the `jq` command. See [the official documentation](https://stedolan.github.io/jq/download/) for the details and how to install.
 
-2. **_Pre-flight check failed: `aws` command is missing_**  
+2. **_🔴 Pre-flight check failed: `aws` command is missing_**  
 Install the latest AWS CLI. See [the official documentation for the AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) or [the official documentation for the AWS CLI v1](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv1.html) for the details and how to install.
 
-3. **_Pre-flight check failed: ECS Exec requires the AWS CLI v1.19.28/v2.1.30 or later_**  
+3. **_🔴 Pre-flight check failed: ECS Exec requires the AWS CLI v1.19.28/v2.1.30 or later_**  
 Upgrade to the latest AWS CLI. See [the official documentation for the AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) or [the official documentation for the AWS CLI v1](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv1.html) for the details and how to upgrade.
 
-4. **_Session Manager Plugin | Missing_**  
+4. **_🔴 Session Manager Plugin | Missing_**  
 Install the Session Manager plugin. See [the official documentation](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) for the details and how to install.
 
-5. **_Can I ExecuteCommand? | ecs:ExecuteCommand: implicitDeny_**  
+4. **_🟡 Cluster Configuration | Audit Logging Not Configured / Disabled_**
+This check item won't block you to use ECS Exec, but we recommend you to enable logging and auditing for your ECS cluster from the security perspective. See [the official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) for the details and how to enable them.
+
+5. **_🔴 Can I ExecuteCommand? | ecs:ExecuteCommand: implicitDeny_**  
 The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use the `ecs:ExecuteCommand` API. See the "[Using IAM policies to limit access to ECS Exec](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command) section in the official documenation to add the required permission to the IAM user/role.  
 Note that the `Condition` element of the IAM policy is not currently supported to evaluate by `check-ecs-exec.sh`.
 
-6. **_Can I ExecuteCommand? | kms:GenerateDataKey: implicitDeny_**  
+6. **_🔴 Can I ExecuteCommand? | kms:GenerateDataKey: implicitDeny_**  
 The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use the `kms:GenerateDataKey` API with the given KMS Key ID which you're using for the logging and auditing configuration for ECS exec. See the "[IAM permissions required for encryption using your own KMS customer master key (CMK)](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) section under the "Logging and Auditing using ECS Exec" section in the official documenation to add the required permission to the IAM user/role.  
 Note that the `Condition` element of the IAM policy is not currently supported to evaluate by `check-ecs-exec.sh`.
 
-7. **_Platform Version | 1.3.0 (Required: >= 1.4.0)_**  
+7. **_🔴 Platform Version | 1.3.0 (Required: >= 1.4.0)_**  
 On AWS Fargate, `ECS Exec` requires the Platform version 1.4.0 or newer. If your ECS task is part of an ECS service, then you can update the platform version by specifying the `PlatformVersion` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `PlatformVersion` parameter specified for the `RunTask` API. See also [the migration guide from the previous PVs](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#platform-version-migration).
 
-8. **_ECS Agent Version | x.y.z (Required: >= 1.50.2)_**  
+8. **_🔴 ECS Agent Version | x.y.z (Required: >= 1.50.2)_**  
 You need to update the version of the ECS Container Agent for your EC2 instance where your ECS task runs. See [the official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-update.html) for the details and how to update.
 
-9. **_Exec Enabled for Task | NO_**  
+9. **_🔴 Exec Enabled for Task | NO_**  
 You need to enable the ECS Exec feature for your ECS service or your ECS standalone task. If your ECS task is part of an ECS service, then you can update the ECS by specifying the `EnableExecuteCommand` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `EnableExecuteCommand` parameter specified for the `RunTask` API.
 
-10. **_Managed Agent Status | STOPPED (Reason: stopped-reason-here)_**  
+10. **_🔴 Managed Agent Status | STOPPED (Reason: stopped-reason-here)_**  
 The managed agent for a container in your Task has stopped for some reasons. If you see this error again and again even after re-running your ECS task, then make sure you have other results from `check-ecs-exec.sh` are all green.
 
-11. **_EC2 or Task Role | Not Configured"_ or _{serviceName}:{ActionName}: implicitDeny_**  
+11. **_🔴 EC2 or Task Role | Not Configured"_ or _{serviceName}:{ActionName}: implicitDeny_**  
 Your ECS task needs a task role or an instance role of the underlying EC2 instance with some permissions for using SSM Session Manager at least. See the [IAM permissions required for ECS Exec](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using) section and the [Enabling logging and auditing in your tasks and services](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) section in the official documentation for the details.  
 Note that the `Condition` element of the IAM policy is not currently supported to evaluate by `check-ecs-exec.sh`.
 
-12. **_SSM PrivateLink "com.amazonaws.(region).ssmmessages" not found_**  
+12. **_🟡 SSM PrivateLink "com.amazonaws.(region).ssmmessages" not found_**  
 The `check-ecs-exec.sh` found one or more VPC endpoints configured in the VPC for your task, so you **may** want to add an additional SSM PrivateLink for your VPC. Make sure your ECS task has proper outbound internet connectivity, and if it doesn't, then you **need** to configure an additional SSM PrivateLink for your VPC.
 
 ## Security
