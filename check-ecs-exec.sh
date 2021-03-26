@@ -49,10 +49,9 @@ COLOR_RED='\033[0;31m'
 COLOR_YELLOW='\033[1;33m'
 COLOR_GREEN='\033[0;32m'
 
-# Required parameters
+# Validation for required parameters
 CLUSTER_NAME=${1:-None} # A cluster name or a full ARN of the cluster
 TASK_ID=${2:-None} # A task ID or a full ARN of the task
-# Validation
 if [[ "x${CLUSTER_NAME}" = "xNone" || "x${TASK_ID}" = "xNone" ]]; then
   printf "${COLOR_RED}Usage:\n" >&2
   printf "  ./check-ecs-exec.sh YOUR_ECS_CLUSTER_NAME YOUR_ECS_TASK_ID\n" >&2
@@ -85,7 +84,7 @@ showEvalResult() {
       printf "${COLOR_GREEN}${evalResult}\n"
     else
       printf "${COLOR_RED}${evalResult}\n"
-    fi 
+    fi
 }
 
 ## 1. CHECK PREREQUISITES FOR check-ecs-exec.sh ##########################################
@@ -124,7 +123,7 @@ callerIdentityJson=$(${AWS_CLI_BIN} sts get-caller-identity)
 ACCOUNT_ID=$(echo "${callerIdentityJson}" | jq -r ".Account")
 MY_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r ".Arn")
 
-# Check if the AWS CLI v1.19.28/v2.1.30 or later exists
+# Check whether the AWS CLI v1.19.28/v2.1.30 or later exists
 describedTaskJson=$(${AWS_CLI_BIN} ecs describe-tasks \
   --cluster "${CLUSTER_NAME}" \
   --tasks "${TASK_ID}" \
@@ -140,7 +139,7 @@ fi
 awsCliVersion=$(${AWS_CLI_BIN} --version 2>&1)
 printf "${COLOR_DEFAULT}  AWS CLI Version        | ${COLOR_GREEN}OK ${COLOR_DEFAULT}(${awsCliVersion})\n"
 
-# Check if the Session Manager plugin exists
+# Check whether the Session Manager plugin exists
 printf "${COLOR_DEFAULT}  Session Manager Plugin | "
 command -v session-manager-plugin >/dev/null 2>&1 && status="$?" || status="$?"
 if [[ "${status}" = 0 ]]; then
@@ -161,7 +160,7 @@ printf "${COLOR_DEFAULT}Task   : ${TASK_ID}\n"
 printSectionHeaderLine
 ##########################################################################################
 
-# 1. Check the cluster configurations
+# 1. Checks on the cluster configurations
 describedClusterJson=$(${AWS_CLI_BIN} ecs describe-clusters \
   --clusters "${CLUSTER_NAME}" \
   --include CONFIGURATIONS \
@@ -230,7 +229,7 @@ else
 fi
 printf "\n"
 
-# 2. Check if "I" can call ecs:ExecuteCommand
+# 2. Check whether "I" can call ecs:ExecuteCommand
 printf "${COLOR_DEFAULT}  Can I ExecuteCommand?  | ${MY_IAM_ARN}\n"
 ecsExecuteCommand="ecs:ExecuteCommand"
 ecsExecEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
@@ -288,7 +287,7 @@ else
   printf "${COLOR_YELLOW}UNKNOWN\n"
 fi
 
-# 4. Check if the `execute-command` option is enabled for the task
+# 4. Check whether the `execute-command` option is enabled for the task
 printf "${COLOR_DEFAULT}  Exec Enabled for Task  | "
 if [[ "x${executeCommandEnabled}" = "xtrue" ]]; then
   printf "${COLOR_GREEN}OK"
@@ -330,7 +329,7 @@ taskRoleArn=$(echo "${taskDefJson}" | jq -r ".taskDefinition.taskRoleArn")
 hasRole=true
 isEC2Role=false
 if [[ "x${taskRoleArn}" = "xnull" ]]; then
-  ## Check if the task has an underlying EC2 instance and it has a IAM role through its instance profile
+  ## When the task runs on EC2 without a task role then we should check the instance profile
   if [[ "x${launchType}" = "xEC2" ]]; then
     ec2InstanceId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].ec2InstanceId")
     instanceProfileArn=$(${AWS_CLI_BIN} ec2 describe-instances --instance-ids "${ec2InstanceId}" | jq -r ".Reservations[0].Instances[0].IamInstanceProfile.Arn")
@@ -455,7 +454,7 @@ else
 fi
 
 # 7. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
-# If there is any VPC Endpoints configured for the task VPC, this means it would need an additional SSM PrivateLink to be configured.
+# If there is any VPC Endpoints configured for the task VPC, we assume you would need an additional SSM PrivateLink to be configured.
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
 taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
 taskVpcId=""
@@ -475,7 +474,7 @@ printf "${COLOR_DEFAULT}  VPC Endpoints          | "
 if [[ "x${vpcEndpoints}" = "x" ]]; then
   printf "${COLOR_GREEN}SKIPPED ${COLOR_DEFAULT}(${taskVpcId} - No additional VPC endpoints required)\n"
 else
-  # Check if a ssmmessages VPC endpoint already exists, if there is any existing VPC endpoints found
+  # Check whether an ssmmessages VPC endpoint exists
   vpcEndpoints=$(echo "${vpcEndpointsJson}" | tr -d '\n' | jq -r ".VpcEndpoints[].ServiceName")
   printf "\n"
   ssmsessionVpcEndpointExists=false
