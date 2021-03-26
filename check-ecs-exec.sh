@@ -137,7 +137,7 @@ Please update the AWS CLI and try again?\n\
   For v1: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv1.html\n"
   exit 1
 fi
-awsCliVersion=$(${AWS_CLI_BIN} --version)
+awsCliVersion=$(${AWS_CLI_BIN} --version 2>&1)
 printf "${COLOR_DEFAULT}  AWS CLI Version        | ${COLOR_GREEN}OK ${COLOR_DEFAULT}(${awsCliVersion})\n"
 
 # Check if the Session Manager plugin exists
