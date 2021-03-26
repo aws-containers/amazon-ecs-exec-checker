@@ -235,7 +235,7 @@ ecsExecuteCommand="ecs:ExecuteCommand"
 ecsExecEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
     --policy-source-arn "${MY_IAM_ARN}" \
     --action-names "${ecsExecuteCommand}" \
-    --resource-arns "arn:aws:ecs:${AWS_REGION}:${ACCOUNT_ID}:cluster/${CLUSTER_NAME}" \
+    --resource-arns "arn:aws:ecs:${AWS_REGION}:${ACCOUNT_ID}:task/${CLUSTER_NAME}/${TASK_ID}" \
     --output json \
     | jq -r ".EvaluationResults[0].EvalDecision")
 showEvalResult "${ecsExecEvalResult}" "${ecsExecuteCommand}"
