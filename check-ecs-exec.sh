@@ -250,6 +250,22 @@ if [[ ! "x${kmsKeyId}" = "xnull" ]]; then
     | jq -r ".EvaluationResults[0].EvalDecision")
   showEvalResult "${kmsGenerateDataKeyResult}" "${kmsGenerateDataKey}"
 fi
+## Check for ensuring "I cannot" call ssm:StartSession 
+### See the "Limiting access to the Start Session action" section at https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-limit-access-start-session
+ssmStartSession="ssm:StartSession"
+printf "${COLOR_DEFAULT}     ${ssmStartSession} denied?: "
+ssmSessionEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
+    --policy-source-arn "${MY_IAM_ARN}" \
+    --action-names "${ssmStartSession}" \
+    --resource-arns "arn:aws:ecs:${AWS_REGION}:${ACCOUNT_ID}:task/${CLUSTER_NAME}/${TASK_ID}" \
+    --output json \
+    | jq -r ".EvaluationResults[0].EvalDecision")
+if [[ "x${ssmSessionEvalResult}" = "xallowed" ]]; then
+  printf "${COLOR_YELLOW}"
+else
+  printf "${COLOR_GREEN}"
+fi
+printf "${ssmSessionEvalResult}\n"
 
 # 3. Check the launch type, platform version, ecs-agent version
 launchType=$(echo "${describedTaskJson}" | jq -r ".tasks[0].launchType")
@@ -314,7 +330,7 @@ else
       *STOPPED* ) printf "${COLOR_RED}STOPPED (Reason: ${reason})";;
       *PENDING* ) printf "${COLOR_YELLOW}PENDING";;
       * ) printf "${COLOR_GREEN}RUNNING";;
-    esac  
+    esac
     printf "${COLOR_DEFAULT} for \"${containerName}\" container\n"
     idx=$((idx+1))
   done
