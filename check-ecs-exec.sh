@@ -124,11 +124,19 @@ callerIdentityJson=$(${AWS_CLI_BIN} sts get-caller-identity)
 ACCOUNT_ID=$(echo "${callerIdentityJson}" | jq -r ".Account")
 MY_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r ".Arn")
 
-# Check whether the AWS CLI v1.19.28/v2.1.30 or later exists
+# Check task existence
 describedTaskJson=$(${AWS_CLI_BIN} ecs describe-tasks \
   --cluster "${CLUSTER_NAME}" \
   --tasks "${TASK_ID}" \
   --output json)
+existTask=$(echo "${describedTaskJson}" | jq -r ".tasks[0].taskDefinitionArn")
+if [[ "x${existTask}" = "xnull" ]]; then
+  printf "${COLOR_RED}Pre-flight check failed: The specified ECS task does not exist.\n\
+Make sure the parameters you have specified for cluster \"${CLUSTER_NAME}\" and task \"${TASK_ID}\" are both valid.\n"
+  exit 1
+fi
+
+# Check whether the AWS CLI v1.19.28/v2.1.30 or later exists
 executeCommandEnabled=$(echo "${describedTaskJson}" | jq -r ".tasks[0].enableExecuteCommand")
 if [[ "x${executeCommandEnabled}" = "xnull" ]]; then
   printf "${COLOR_RED}Pre-flight check failed: ECS Exec requires the AWS CLI v1.19.28/v2.1.30 or later.\n\
