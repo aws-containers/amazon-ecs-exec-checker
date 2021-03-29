@@ -122,7 +122,8 @@ AWS_REGION=${AWS_REGION:-$REGION}
 
 callerIdentityJson=$(${AWS_CLI_BIN} sts get-caller-identity)
 ACCOUNT_ID=$(echo "${callerIdentityJson}" | jq -r ".Account")
-MY_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r ".Arn")
+MY_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r '.Arn |= sub("assumed-role"; "role") | .Arn')
+MY_IAM_ARN="${MY_IAM_ARN%\/*}"
 
 # Check task existence
 describedTaskJson=$(${AWS_CLI_BIN} ecs describe-tasks \
