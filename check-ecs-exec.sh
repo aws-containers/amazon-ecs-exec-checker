@@ -124,8 +124,12 @@ printf "${COLOR_DEFAULT}Prerequisites for the AWS CLI to use ECS Exec\n"
 printSectionHeaderLine
 ##########################################################################################
 
-REGION=$(${AWS_CLI_BIN} configure get region)
+REGION=$(${AWS_CLI_BIN} configure get region || echo "")
 AWS_REGION=${AWS_REGION:-$REGION}
+if [[ "x${AWS_REGION}" = "x" ]]; then
+  printf "${COLOR_RED}Pre-flight check failed: Missing AWS region. Use the \`aws configure set default.region\` command or set the \"AWS_REGION\" environment variable.\n" >&2
+  exit 1
+fi
 
 callerIdentityJson=$(${AWS_CLI_BIN} sts get-caller-identity)
 ACCOUNT_ID=$(echo "${callerIdentityJson}" | jq -r ".Account")
@@ -180,6 +184,7 @@ printf "\n"
 printSectionHeaderLine
 printf "${COLOR_DEFAULT}Configurations for ECS task and other resources\n"
 printSectionHeaderLine
+printf "${COLOR_DEFAULT}Region : ${AWS_REGION}\n"
 printf "${COLOR_DEFAULT}Cluster: ${CLUSTER_NAME}\n"
 printf "${COLOR_DEFAULT}Task   : ${TASK_ID}\n"
 printSectionHeaderLine
