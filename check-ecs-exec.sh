@@ -19,7 +19,9 @@ set -euo pipefail
 ##   https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
 ##
 
-## NOTE: This script needs the following permissions.
+## NOTE: This script needs the following permissions. 
+##       If you use an IAM user with an assumed role to run the script,
+##       then you need allow the "iam:ListRoles" action in addition to the following.
 ## {
 ##     "Version": "2012-10-17",
 ##     "Statement": [
@@ -70,6 +72,11 @@ equalsOrGreaterVersion() {
     return
   fi
   false
+}
+getRoleArnForAssumedRole() {
+  callerIdentityJson=$1
+  ROLE_ID=$(echo "${callerIdentityJson}" | jq -r ".UserId" | cut -d: -f1)
+  aws iam list-roles --query "Roles[?RoleId=='${ROLE_ID}'].Arn" --output text
 }
 # For `iam simulate-principal-policy`
 readEvalDecision() {
@@ -122,7 +129,16 @@ AWS_REGION=${AWS_REGION:-$REGION}
 
 callerIdentityJson=$(${AWS_CLI_BIN} sts get-caller-identity)
 ACCOUNT_ID=$(echo "${callerIdentityJson}" | jq -r ".Account")
-MY_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r '.Arn |= sub("assumed-role"; "role") | .Arn' | cut -f1,2 -d'/')
+CALLER_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r ".Arn")
+case "${CALLER_IAM_ARN}" in
+  *:user/*|*:role/*|*:group/* ) MY_IAM_ARN="${CALLER_IAM_ARN}";;
+  *:assumed-role/*) MY_IAM_ARN=$(getRoleArnForAssumedRole "${callerIdentityJson}");;
+  * ) printf "${COLOR_RED}Pre-flight check failed: The ARN \"${CALLER_IAM_ARN}\" associated with the caller(=you) is not supported. Try again either with one of an IAM user, an IAM role, or an assumed IAM role.\n" >&2 && exit 1;;
+esac
+if [[ "x${MY_IAM_ARN}" = "x" ]]; then
+  printf "${COLOR_RED}Unknown error: Failed to get the role ARN of the caller(=you).\n" >&2
+  exit 1
+fi
 
 # Check task existence
 describedTaskJson=$(${AWS_CLI_BIN} ecs describe-tasks \
