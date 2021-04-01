@@ -76,11 +76,11 @@ Install the Session Manager plugin. See [the official documentation](https://doc
 This check item won't block you to use ECS Exec, but we recommend you to enable logging and auditing for your ECS cluster from the security perspective. See [the official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) for the details and how to enable them.
 
 5. **_🔴 Can I ExecuteCommand? | ecs:ExecuteCommand: implicitDeny_**  
-The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use the `ecs:ExecuteCommand` API. See the "[Using IAM policies to limit access to ECS Exec](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command) section in the official documenation to add the required permission to the IAM user/role.  
+The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use the `ecs:ExecuteCommand` API. See the "[Using IAM policies to limit access to ECS Exec](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command) section in the official documentation to add the required permission to the IAM user/role.  
 Note that the `Condition` element of the IAM policy is not currently supported to evaluate by `check-ecs-exec.sh`.
 
 6. **_🔴 Can I ExecuteCommand? | kms:GenerateDataKey: implicitDeny_**  
-The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use the `kms:GenerateDataKey` API with the given KMS Key ID which you're using for the logging and auditing configuration for ECS exec. See the "[IAM permissions required for encryption using your own KMS customer master key (CMK)](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) section under the "Logging and Auditing using ECS Exec" section in the official documenation to add the required permission to the IAM user/role.  
+The IAM user/role you used for the `check-ecs-exec.sh` are not allowed to use the `kms:GenerateDataKey` API with the given KMS Key ID which you're using for the logging and auditing configuration for ECS exec. See the "[IAM permissions required for encryption using your own KMS customer master key (CMK)](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) section under the "Logging and Auditing using ECS Exec" section in the official documentation to add the required permission to the IAM user/role.  
 Note that the `Condition` element of the IAM policy is not currently supported to evaluate by `check-ecs-exec.sh`.
 
 7. **_🟡 Can I ExecuteCommand? | ssm:StartSession denied?: allowed_**  
