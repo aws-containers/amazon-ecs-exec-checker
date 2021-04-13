@@ -367,13 +367,14 @@ else
     containerName=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].name")
     status=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].managedAgents[0].lastStatus")
     reason=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].managedAgents[0].reason")
+    lastStartedAt=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].managedAgents[0].lastStartedAt")
     printf "     $((idx+1)). "
     case "${status}" in
       *STOPPED* ) printf "${COLOR_RED}STOPPED (Reason: ${reason})";;
       *PENDING* ) printf "${COLOR_YELLOW}PENDING";;
       * ) printf "${COLOR_GREEN}RUNNING";;
     esac
-    printf "${COLOR_DEFAULT} for \"${containerName}\" container\n"
+    printf "${COLOR_DEFAULT} for \"${containerName}\" container - LastStartedAt: ${lastStartedAt}\n"
     idx=$((idx+1))
   done
 fi
@@ -394,7 +395,7 @@ for enabled in $initEnabledList; do
     *false* ) printf "${COLOR_YELLOW}Disabled";;
     * ) printf "${COLOR_YELLOW}Disabled";;
   esac
-  printf "${COLOR_DEFAULT} for \"${containerName}\" container\n"
+  printf "${COLOR_DEFAULT} - \"${containerName}\" container\n"
   idx=$((idx+1))
 done
 
