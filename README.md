@@ -87,26 +87,32 @@ Note that the `Condition` element of the IAM policy is not currently supported t
 The result means your IAM user/role is allowed to do `ssm:StartSession` action to the ECS task. This check item won't block you to use ECS Exec, but we recommend you to limit access to the `ssm:StartSession` API, from the security and the principle of least privilege perspectives. See [the ECS official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-limit-access-start-session) for further details.  
 Note that the `Condition` element of the IAM policy is not currently supported to evaluate by `check-ecs-exec.sh`.
 
-8. **_🔴 Platform Version | 1.3.0 (Required: >= 1.4.0)_**  
+8. **_🔴 Task Status | DEACTIVATING or STOPPING or DEPROVISIONING or STOPPED_**  
+Your ECS task has already stopped, or is shutting down. ECS Exec requires the task is in the `RUNNING` state. Restart your ECS task if it's a standalone task, or wait for another task if it's a part of an ECS service. See also [the Task lifecycle](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-lifecycle.html) in the ECS documentation for more details.
+
+9. **_🟡 Task Status | PROVISIONING or ACTIVATING or PENDING_**  
+Your ECS task is in the middle of its starting process. ECS Exec requires the task is in the `RUNNING` state. Wait few more seconds for the task to be ready. See also [the Task lifecycle](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-lifecycle.html) in the ECS documentation for more details.
+
+10. **_🔴 Platform Version | 1.3.0 (Required: >= 1.4.0)_**  
 On AWS Fargate, `ECS Exec` requires the Platform version 1.4.0 or newer. If your ECS task is part of an ECS service, then you can update the platform version by specifying the `PlatformVersion` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `PlatformVersion` parameter specified for the `RunTask` API. See also [the migration guide from the previous PVs](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#platform-version-migration).
 
-9. **_🔴 ECS Agent Version | x.y.z (Required: >= 1.50.2)_**  
+11. **_🔴 ECS Agent Version | x.y.z (Required: >= 1.50.2)_**  
 You need to update the version of the ECS Container Agent for your EC2 instance where your ECS task runs. See [the ECS official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-update.html) for the details and how to update.
 
-10. **_🔴 Exec Enabled for Task | NO_**  
+12. **_🔴 Exec Enabled for Task | NO_**  
 You need to enable the ECS Exec feature for your ECS service or your ECS standalone task. If your ECS task is part of an ECS service, then you can update the ECS by specifying the `EnableExecuteCommand` parameter for the `UpdateService` API. If your ECS task is a standalone task, then you need to re-run the ECS task with the `EnableExecuteCommand` parameter specified for the `RunTask` API.
 
-11. **_🔴 Managed Agent Status | STOPPED (Reason: stopped-reason-here)_**  
+13. **_🔴 Managed Agent Status | STOPPED (Reason: stopped-reason-here)_**  
 The managed agent for a container in your Task has stopped for some reasons. If you see this error again and again even after re-running your ECS task, then make sure you have other results from `check-ecs-exec.sh` are all green.
 
-12. **_🟡 Init Process Enabled | Disabled_**  
+14. **_🟡 Init Process Enabled | Disabled_**  
 This check item won't block you to use ECS Exec, but we recommend you to add the `initProcessEnabled` flag to your ECS task definition for each container to avoid having orphaned and zombie processes. See the "Considerations for using ECS Exec" in [the ECS official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-considerations) for more details.
 
-13. **_🔴 EC2 or Task Role | Not Configured"_ or _{serviceName}:{ActionName}: implicitDeny_**  
+15. **_🔴 EC2 or Task Role | Not Configured"_ or _{serviceName}:{ActionName}: implicitDeny_**  
 Your ECS task needs a task role or an instance role of the underlying EC2 instance with some permissions for using SSM Session Manager at least. See the [IAM permissions required for ECS Exec](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using) section and the [Enabling logging and auditing in your tasks and services](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-logging) section in the official documentation for the details.  
 Note that the `Condition` element of the IAM policy is not currently supported to evaluate by `check-ecs-exec.sh`.
 
-14. **_🟡 SSM PrivateLink "com.amazonaws.(region).ssmmessages" not found_**  
+16. **_🟡 SSM PrivateLink "com.amazonaws.(region).ssmmessages" not found_**  
 The `check-ecs-exec.sh` found one or more VPC endpoints configured in the VPC for your task, so you **may** want to add an additional SSM PrivateLink for your VPC. Make sure your ECS task has proper outbound internet connectivity, and if it doesn't, then you **need** to configure an additional SSM PrivateLink for your VPC.
 
 ## Security

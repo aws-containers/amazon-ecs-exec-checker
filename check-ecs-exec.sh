@@ -296,7 +296,20 @@ else
 fi
 printf "${ssmSessionEvalResult}\n"
 
-# 3. Check the launch type, platform version, ecs-agent version
+# 3. Check the task is in RUNNING state
+printf "${COLOR_DEFAULT}  Task Status            | "
+taskStatus=$(echo "${describedTaskJson}" | jq -r ".tasks[0].lastStatus")
+stoppedReason=$(echo "${describedTaskJson}" | jq -r ".tasks[0].stoppedReason")
+case "${taskStatus}" in
+  RUNNING ) printf "${COLOR_GREEN}${taskStatus}";;
+  PROVISIONING|ACTIVATING|PENDING ) printf "${COLOR_YELLOW}${taskStatus}";;
+  DEACTIVATING|STOPPING|DEPROVISIONING ) printf "${COLOR_RED}${taskStatus}";;
+  STOPPED ) printf "${COLOR_RED}${taskStatus} (${stoppedReason})";;
+  * ) printf "${COLOR_RED}${taskStatus}";;
+esac
+printf "${COLOR_DEFAULT}\n"
+
+# 4. Check the launch type, platform version, ecs-agent version
 launchType=$(echo "${describedTaskJson}" | jq -r ".tasks[0].launchType")
 describedContainerInstanceJson=""
 printf "${COLOR_DEFAULT}  Launch Type            | "
@@ -333,7 +346,7 @@ else
   printf "${COLOR_YELLOW}UNKNOWN\n"
 fi
 
-# 4. Check whether the `execute-command` option is enabled for the task
+# 5. Check whether the `execute-command` option is enabled for the task
 printf "${COLOR_DEFAULT}  Exec Enabled for Task  | "
 if [[ "x${executeCommandEnabled}" = "xtrue" ]]; then
   printf "${COLOR_GREEN}OK"
@@ -342,7 +355,7 @@ else
 fi
 printf "${COLOR_DEFAULT}\n"
 
-# 5. Check the managed agents' status
+# 6. Check the managed agents' status
 printf "${COLOR_DEFAULT}  Managed Agent Status   | "
 if [[ "x${executeCommandEnabled}" = "xfalse" ]]; then
   printf "${COLOR_YELLOW}SKIPPED\n"
@@ -365,7 +378,7 @@ else
   done
 fi
 
-# 6. Check the "initProcessEnabled" flag added in the task definition (yellow)
+# 7. Check the "initProcessEnabled" flag added in the task definition (yellow)
 taskDefArn=$(echo "${describedTaskJson}" | jq -r ".tasks[0].taskDefinitionArn")
 taskDefJson=$(${AWS_CLI_BIN} ecs describe-task-definition \
   --task-definition "${taskDefArn}" \
@@ -385,7 +398,7 @@ for enabled in $initEnabledList; do
   idx=$((idx+1))
 done
 
-# 7. Check the task role permissions
+# 8. Check the task role permissions
 taskRoleArn=$(echo "${taskDefJson}" | jq -r ".taskDefinition.taskRoleArn")
 
 hasRole=true
@@ -515,7 +528,7 @@ else
   fi
 fi
 
-# 8. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
+# 9. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
 # If there is any VPC Endpoints configured for the task VPC, we assume you would need an additional SSM PrivateLink to be configured. (yellow)
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
 taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
