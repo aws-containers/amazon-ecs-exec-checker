@@ -182,7 +182,7 @@ fi
 ## 3. CHECK CLUSTER AND TASK CONFIGURATIONS ##############################################
 printf "\n"
 printSectionHeaderLine
-printf "${COLOR_DEFAULT}Configurations for ECS task and other resources\n"
+printf "${COLOR_DEFAULT}Checks on ECS task and other resources\n"
 printSectionHeaderLine
 printf "${COLOR_DEFAULT}Region : ${AWS_REGION}\n"
 printf "${COLOR_DEFAULT}Cluster: ${CLUSTER_NAME}\n"
@@ -190,7 +190,7 @@ printf "${COLOR_DEFAULT}Task   : ${TASK_ID}\n"
 printSectionHeaderLine
 ##########################################################################################
 
-# 1. Checks on the cluster configurations
+# 1. Checks on the cluster configurations (yellow)
 describedClusterJson=$(${AWS_CLI_BIN} ecs describe-clusters \
   --clusters "${CLUSTER_NAME}" \
   --include CONFIGURATIONS \
@@ -279,7 +279,7 @@ if [[ ! "x${kmsKeyId}" = "xnull" ]]; then
     | jq -r ".EvaluationResults[0].EvalDecision")
   showEvalResult "${kmsGenerateDataKeyResult}" "${kmsGenerateDataKey}"
 fi
-## Check for ensuring "I cannot" call ssm:StartSession 
+## Check for ensuring "I cannot" call ssm:StartSession (yellow)
 ### See the "Limiting access to the Start Session action" section at https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-limit-access-start-session
 ssmStartSession="ssm:StartSession"
 printf "${COLOR_DEFAULT}     ${ssmStartSession} denied?: "
@@ -345,7 +345,7 @@ printf "${COLOR_DEFAULT}\n"
 # 5. Check the managed agents' status
 printf "${COLOR_DEFAULT}  Managed Agent Status   | "
 if [[ "x${executeCommandEnabled}" = "xfalse" ]]; then
-  printf "${COLOR_DEFAULT}SKIPPED\n"
+  printf "${COLOR_YELLOW}SKIPPED\n"
 else
   printf "\n"
   agentsStatus=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[].managedAgents[].lastStatus")
@@ -365,11 +365,27 @@ else
   done
 fi
 
-# 6. Check the task role permissions
+# 6. Check the "initProcessEnabled" flag added in the task definition (yellow)
 taskDefArn=$(echo "${describedTaskJson}" | jq -r ".tasks[0].taskDefinitionArn")
 taskDefJson=$(${AWS_CLI_BIN} ecs describe-task-definition \
   --task-definition "${taskDefArn}" \
   --output json)
+initEnabledList=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[].linuxParameters.initProcessEnabled")
+idx=0
+printf "${COLOR_DEFAULT}  Init Process Enabled   | ${taskDefArn}\n"
+for enabled in $initEnabledList; do
+  containerName=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].name")
+  printf "     $((idx+1)). "
+  case "${enabled}" in
+    *true* ) printf "${COLOR_GREEN}Enabled";;
+    *false* ) printf "${COLOR_YELLOW}Disabled";;
+    * ) printf "${COLOR_YELLOW}Disabled";;
+  esac
+  printf "${COLOR_DEFAULT} for \"${containerName}\" container\n"
+  idx=$((idx+1))
+done
+
+# 7. Check the task role permissions
 taskRoleArn=$(echo "${taskDefJson}" | jq -r ".taskDefinition.taskRoleArn")
 
 hasRole=true
@@ -499,8 +515,8 @@ else
   fi
 fi
 
-# 7. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
-# If there is any VPC Endpoints configured for the task VPC, we assume you would need an additional SSM PrivateLink to be configured.
+# 8. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
+# If there is any VPC Endpoints configured for the task VPC, we assume you would need an additional SSM PrivateLink to be configured. (yellow)
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
 taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
 taskVpcId=""
