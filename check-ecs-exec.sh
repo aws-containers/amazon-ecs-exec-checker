@@ -400,7 +400,12 @@ for enabled in $initEnabledList; do
 done
 
 # 8. Check the task role permissions
-taskRoleArn=$(echo "${taskDefJson}" | jq -r ".taskDefinition.taskRoleArn")
+overriddenTaskRole=true
+taskRoleArn=$(echo "${describedTaskJson}" | jq -r ".tasks[0].overrides.taskRoleArn")
+if [[ "x${taskRoleArn}" = "xnull" ]]; then
+  overriddenTaskRole=false
+  taskRoleArn=$(echo "${taskDefJson}" | jq -r ".taskDefinition.taskRoleArn")
+fi
 
 hasRole=true
 isEC2Role=false
@@ -436,7 +441,11 @@ else
   else
     printf "${COLOR_DEFAULT}  Task Role Permissions  | "
   fi
-  printf "${taskRoleArn}\n"
+  printf "${taskRoleArn}"
+  if [[ "x${overriddenTaskRole}" = "xtrue" ]]; then
+    printf " (Overridden)"
+  fi
+  printf "\n"
   ## Required Permissions
   ### SSM
   ssm="ssmmessages:"
