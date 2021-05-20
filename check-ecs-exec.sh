@@ -356,11 +356,15 @@ fi
 printf "${COLOR_DEFAULT}\n"
 
 # 6. Check the managed agents' status
-printf "${COLOR_DEFAULT}  Managed Agent Status   | "
+printf "${COLOR_DEFAULT}  Container-Level Checks | \n"
+printf "${COLOR_DEFAULT}    ----------\n"
+printf "${COLOR_DEFAULT}      Managed Agent Status"
 if [[ "x${executeCommandEnabled}" = "xfalse" ]]; then
-  printf "${COLOR_YELLOW}SKIPPED\n"
+  printf " - ${COLOR_YELLOW}SKIPPED\n"
+  printf "${COLOR_DEFAULT}    ----------\n"
 else
   printf "\n"
+  printf "${COLOR_DEFAULT}    ----------\n"
   agentsStatus=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[].managedAgents[].lastStatus")
   idx=0
   for _ in $agentsStatus; do
@@ -368,13 +372,17 @@ else
     status=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].managedAgents[0].lastStatus")
     reason=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].managedAgents[0].reason")
     lastStartedAt=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].managedAgents[0].lastStartedAt")
-    printf "     $((idx+1)). "
+    printf "         $((idx+1)). "
     case "${status}" in
       *STOPPED* ) printf "${COLOR_RED}STOPPED (Reason: ${reason})";;
       *PENDING* ) printf "${COLOR_YELLOW}PENDING";;
       * ) printf "${COLOR_GREEN}RUNNING";;
     esac
-    printf "${COLOR_DEFAULT} for \"${containerName}\" container - LastStartedAt: ${lastStartedAt}\n"
+    printf "${COLOR_DEFAULT} for \"${containerName}\""
+    if [[ "x${status}" = "xSTOPPED" ]]; then
+      printf " - LastStartedAt: ${lastStartedAt}"
+    fi
+    printf "\n"
     idx=$((idx+1))
   done
 fi
@@ -384,22 +392,44 @@ taskDefArn=$(echo "${describedTaskJson}" | jq -r ".tasks[0].taskDefinitionArn")
 taskDefJson=$(${AWS_CLI_BIN} ecs describe-task-definition \
   --task-definition "${taskDefArn}" \
   --output json)
+taskDefFamily=$(echo "${taskDefJson}" | jq -r ".taskDefinition.family")
+taskDefRevision=$(echo "${taskDefJson}" | jq -r ".taskDefinition.revision")
 initEnabledList=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[].linuxParameters.initProcessEnabled")
 idx=0
-printf "${COLOR_DEFAULT}  Init Process Enabled   | ${taskDefArn}\n"
+printf "${COLOR_DEFAULT}    ----------\n"
+printf "${COLOR_DEFAULT}      Init Process Enabled (${taskDefFamily}:${taskDefRevision})\n"
+printf "${COLOR_DEFAULT}    ----------\n"
 for enabled in $initEnabledList; do
   containerName=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].name")
-  printf "     $((idx+1)). "
+  printf "         $((idx+1)). "
   case "${enabled}" in
     *true* ) printf "${COLOR_GREEN}Enabled";;
     *false* ) printf "${COLOR_YELLOW}Disabled";;
     * ) printf "${COLOR_YELLOW}Disabled";;
   esac
-  printf "${COLOR_DEFAULT} - \"${containerName}\" container\n"
+  printf "${COLOR_DEFAULT} - \"${containerName}\"\n"
   idx=$((idx+1))
 done
 
-# 8. Check the task role permissions
+# 8. Check the "readonlyRootFilesystem" flag added in the task definition (red)
+readonlyRootFsList=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[].readonlyRootFilesystem")
+idx=0
+printf "${COLOR_DEFAULT}    ----------\n"
+printf "${COLOR_DEFAULT}      Read-Only Root Filesystem (${taskDefFamily}:${taskDefRevision})\n"
+printf "${COLOR_DEFAULT}    ----------\n"
+for enabled in $readonlyRootFsList; do
+  containerName=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].name")
+  printf "         $((idx+1)). "
+  case "${enabled}" in
+    *false* ) printf "${COLOR_GREEN}Disabled";;
+    *true* ) printf "${COLOR_RED}ReadOnly";;
+    * ) printf "${COLOR_GREEN}Disabled";;
+  esac
+  printf "${COLOR_DEFAULT} - \"${containerName}\"\n"
+  idx=$((idx+1))
+done
+
+# 9. Check the task role permissions
 overriddenTaskRole=true
 taskRoleArn=$(echo "${describedTaskJson}" | jq -r ".tasks[0].overrides.taskRoleArn")
 if [[ "x${taskRoleArn}" = "xnull" ]]; then
@@ -538,7 +568,7 @@ else
   fi
 fi
 
-# 9. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
+# 10. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
 # If there is any VPC Endpoints configured for the task VPC, we assume you would need an additional SSM PrivateLink to be configured. (yellow)
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
 taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
