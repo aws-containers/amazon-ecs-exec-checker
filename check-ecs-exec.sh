@@ -3,6 +3,8 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
+CHECKER_VERSION=v0.5
+
 # shellcheck disable=SC2059
 
 # Script Name: check-ecs-exec.sh
@@ -97,7 +99,7 @@ showEvalResult() {
 
 ## 1. CHECK PREREQUISITES FOR check-ecs-exec.sh ##########################################
 printSectionHeaderLine
-printf "${COLOR_DEFAULT}Prerequisites for check-ecs-exec.sh\n"
+printf "${COLOR_DEFAULT}Prerequisites for check-ecs-exec.sh ${CHECKER_VERSION}\n"
 printSectionHeaderLine
 ##########################################################################################
 
