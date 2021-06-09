@@ -605,7 +605,11 @@ else
 
   printf "    Found existing endpoints for ${taskVpcId}:\n"  
   for vpe in $vpcEndpoints; do
-    printf "      - ${COLOR_DEFAULT}${vpe}\n"
+    if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
+      printf "      - ${COLOR_GREEN}${vpe}${COLOR_DEFAULT}\n"
+    else
+      printf "      - ${COLOR_DEFAULT}${vpe}\n"
+    fi
   done
   if [[ "x${ssmsessionVpcEndpointExists}" = "xfalse" ]]; then
     printf "    SSM PrivateLink \"${COLOR_YELLOW}${requiredEndpoint}${COLOR_DEFAULT}\" not found. You must ensure your task has proper outbound internet connectivity."
