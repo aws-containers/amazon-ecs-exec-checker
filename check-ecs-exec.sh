@@ -119,6 +119,19 @@ if [[ ! "${status}" = 0 ]]; then
 fi
 printf "${COLOR_DEFAULT}  AWS CLI | ${COLOR_GREEN}OK ${COLOR_DEFAULT}($(which "${AWS_CLI_BIN}"))\n"
 
+# Find AWS region
+REGION=$(${AWS_CLI_BIN} configure get region || echo "")
+export AWS_REGION=${AWS_REGION:-$REGION}
+# Check region configuration in "source_profile" if the user uses MFA configurations
+source_profile=$(${AWS_CLI_BIN} configure get source_profile || echo "")
+if [ "${AWS_REGION}" = "" ] && [ "${source_profile}" != "" ]; then
+  export AWS_REGION=$(${AWS_CLI_BIN} configure get region --profile ${source_profile} || echo "")
+fi
+if [[ "x${AWS_REGION}" = "x" ]]; then
+  printf "${COLOR_RED}Pre-flight check failed: Missing AWS region. Use the \`aws configure set default.region\` command or set the \"AWS_REGION\" environment variable.\n" >&2
+  exit 1
+fi
+
 ## 2. CHECK PREREQUISITES FOR USING ECS EXEC FEATURE VIA AWS CLI #########################
 printf "\n"
 printSectionHeaderLine
@@ -126,13 +139,33 @@ printf "${COLOR_DEFAULT}Prerequisites for the AWS CLI to use ECS Exec\n"
 printSectionHeaderLine
 ##########################################################################################
 
-REGION=$(${AWS_CLI_BIN} configure get region || echo "")
-AWS_REGION=${AWS_REGION:-$REGION}
-if [[ "x${AWS_REGION}" = "x" ]]; then
-  printf "${COLOR_RED}Pre-flight check failed: Missing AWS region. Use the \`aws configure set default.region\` command or set the \"AWS_REGION\" environment variable.\n" >&2
-  exit 1
+# MFA
+AWS_MFA_SERIAL=${AWS_MFA_SERIAL:-$(${AWS_CLI_BIN} configure get mfa_serial || echo "")}
+ROLE_TO_BE_ASSUMED=$(${AWS_CLI_BIN} configure get role_arn || echo "")
+SOURCE_PROFILE=$(${AWS_CLI_BIN} configure get source_profile || echo "")
+# Normally we don't need to ask MFA code thanks to the AWS CLI
+# but we do need to prompt explicitly if the "AWS_MFA_SERIAL" value only exists without "role_arn" and "source_profile"
+if [ "${AWS_MFA_SERIAL}" != "" ] && [ "${ROLE_TO_BE_ASSUMED}" == "" ] && [ "${SOURCE_PROFILE}" == "" ]; then
+  # Prpmpt users to enter MFA code to obtain temporary credentials
+  mfa_code=""
+  while true; do
+    printf "\n"
+    printf "Type MFA code for ${AWS_MFA_SERIAL}: "
+    read -rs mfa_code
+    if [ -z "${mfa_code}" ]; then
+       printf "${COLOR_RED}MFA code cannot be empty${COLOR_DEFAULT}"
+       continue
+    fi
+    break
+  done
+
+  tmpCreds=$(${AWS_CLI_BIN} sts get-session-token --serial-number "${AWS_MFA_SERIAL}" --token-code "${mfa_code}")
+  export AWS_ACCESS_KEY_ID=$( echo "${tmpCreds}" | jq -r .Credentials.AccessKeyId )
+  export AWS_SECRET_ACCESS_KEY=$( echo "${tmpCreds}" | jq -r .Credentials.SecretAccessKey )
+  export AWS_SESSION_TOKEN=$( echo "${tmpCreds}" | jq -r .Credentials.SessionToken )
 fi
 
+# Find caller identity
 callerIdentityJson=$(${AWS_CLI_BIN} sts get-caller-identity)
 ACCOUNT_ID=$(echo "${callerIdentityJson}" | jq -r ".Account")
 CALLER_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r ".Arn")

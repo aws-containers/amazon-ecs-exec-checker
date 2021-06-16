@@ -36,7 +36,11 @@ $ export AWS_REGION=us-west-2
 $ bash <( curl -Ls https://raw.githubusercontent.com/aws-containers/amazon-ecs-exec-checker/main/check-ecs-exec.sh ) <YOUR_ECS_CLUSTER_NAME> <YOUR_ECS_TASK_ID>
 ```
 
-_Example 3 - Switch AWS CLI binaries_
+_Example 3 - With MFA_
+
+The `check-ecs-exec.sh` automatically detects your MFA configuration for the AWS CLI. But you can also explicitly specify which MFA device to use by setting the ARN of the MFA device to `AWS_MFA_SERIAL` environment variable.
+
+_Example 4 - Switch AWS CLI binaries_
 
 If you have multiple AWS CLI installations in your environment, both AWS CLI v1 and v2 for example, you can choose which AWS CLI binary to use by passing the `AWS_CLI_BIN` env variable.
 
