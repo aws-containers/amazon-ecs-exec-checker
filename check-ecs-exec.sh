@@ -3,7 +3,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
-CHECKER_VERSION=v0.5
+CHECKER_VERSION=v0.6
 
 # shellcheck disable=SC2059
 
