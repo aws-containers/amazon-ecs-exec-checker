@@ -606,46 +606,57 @@ fi
 # 10. Check existing VPC Endpoints (PrivateLinks) in the task VPC.
 # If there is any VPC Endpoints configured for the task VPC, we assume you would need an additional SSM PrivateLink to be configured. (yellow)
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
+requiredEndpoint="com.amazonaws.${AWS_REGION}.ssmmessages"
 taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
-taskVpcId=""
+taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0].details[] | select(.name==\"subnetId\") | .value")
+subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
 if [[ "x${taskNetworkingAttachment}" = "xnull" ]]; then
   ## bridge/host networking (only for EC2)
   taskVpcId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].attributes[] | select(.name==\"ecs.vpc-id\") | .value")
 else
   ## awsvpc networking (for both EC2 and Fargate)
-  taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0].details[] | select(.name==\"subnetId\") | .value")
-  taskVpcId=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}" | jq -r ".Subnets[0].VpcId")
+  taskVpcId=$(echo "${subnetJson}" | jq -r ".Subnets[0].VpcId")
 fi
-## List Vpc Endpoints
-vpcEndpointsJson=$(${AWS_CLI_BIN} ec2 describe-vpc-endpoints \
-  --filters Name=vpc-id,Values="${taskVpcId}")
-vpcEndpoints=$(echo "${vpcEndpointsJson}" | tr -d '\n' | jq -r ".VpcEndpoints[]")
+## Obtain the ownerID of subnet's owner to check if the subnet is shared via AWS RAM (which check-ecs-exec.sh doesn't support today)
+subnetOwnerId=$(echo "${subnetJson}" | jq -r ".Subnets[0].OwnerId")
 printf "${COLOR_DEFAULT}  VPC Endpoints          | "
-if [[ "x${vpcEndpoints}" = "x" ]]; then
-  printf "${COLOR_GREEN}SKIPPED ${COLOR_DEFAULT}(${taskVpcId} - No additional VPC endpoints required)\n"
+if [[ ! "x${ACCOUNT_ID}" = "x${subnetOwnerId}" ]]; then
+  ## Shared Subnets (VPC) are not supported in Amazon ECS Exec Checker
+  printf "${COLOR_RED}CHECK FAILED${COLOR_YELLOW}\n"
+  printf "     Amazon ECS Exec Checker doesn't support VPC endpoint validation for AWS RAM shared VPC/subnets.\n"
+  printf "     Contact your administrator to confirm if the following resources require an additional VPC endpoint configuration.\n"
+  printf "     - VPC Endpoint: ${requiredEndpoint}\n"
+  printf "     - Resources: ${taskVpcId} and ${taskSubnetId}${COLOR_DEFAULT}\n"
 else
-  # Check whether an ssmmessages VPC endpoint exists
-  vpcEndpoints=$(echo "${vpcEndpointsJson}" | tr -d '\n' | jq -r ".VpcEndpoints[].ServiceName")
-  printf "\n"
-  ssmsessionVpcEndpointExists=false
-  requiredEndpoint="com.amazonaws.${AWS_REGION}.ssmmessages"
-  for vpe in $vpcEndpoints; do
-    if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
-      ssmsessionVpcEndpointExists=true
-      break
-    fi
-  done
+  ## List Vpc Endpoints
+  vpcEndpointsJson=$(${AWS_CLI_BIN} ec2 describe-vpc-endpoints \
+    --filters Name=vpc-id,Values="${taskVpcId}")
+  vpcEndpoints=$(echo "${vpcEndpointsJson}" | tr -d '\n' | jq -r ".VpcEndpoints[]")
+  if [[ "x${vpcEndpoints}" = "x" ]]; then
+    printf "${COLOR_GREEN}SKIPPED ${COLOR_DEFAULT}(${taskVpcId} - No additional VPC endpoints required)\n"
+  else
+    # Check whether an ssmmessages VPC endpoint exists
+    vpcEndpoints=$(echo "${vpcEndpointsJson}" | tr -d '\n' | jq -r ".VpcEndpoints[].ServiceName")
+    printf "\n"
+    ssmsessionVpcEndpointExists=false
+    for vpe in $vpcEndpoints; do
+      if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
+        ssmsessionVpcEndpointExists=true
+        break
+      fi
+    done
 
-  printf "    Found existing endpoints for ${taskVpcId}:\n"  
-  for vpe in $vpcEndpoints; do
-    if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
-      printf "      - ${COLOR_GREEN}${vpe}${COLOR_DEFAULT}\n"
-    else
-      printf "      - ${COLOR_DEFAULT}${vpe}\n"
+    printf "    Found existing endpoints for ${taskVpcId}:\n"  
+    for vpe in $vpcEndpoints; do
+      if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
+        printf "      - ${COLOR_GREEN}${vpe}${COLOR_DEFAULT}\n"
+      else
+        printf "      - ${COLOR_DEFAULT}${vpe}\n"
+      fi
+    done
+    if [[ "x${ssmsessionVpcEndpointExists}" = "xfalse" ]]; then
+      printf "    SSM PrivateLink \"${COLOR_YELLOW}${requiredEndpoint}${COLOR_DEFAULT}\" not found. You must ensure your task has proper outbound internet connectivity."
     fi
-  done
-  if [[ "x${ssmsessionVpcEndpointExists}" = "xfalse" ]]; then
-    printf "    SSM PrivateLink \"${COLOR_YELLOW}${requiredEndpoint}${COLOR_DEFAULT}\" not found. You must ensure your task has proper outbound internet connectivity."
   fi
 fi
 
