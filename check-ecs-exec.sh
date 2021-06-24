@@ -624,9 +624,9 @@ if [[ ! "x${ACCOUNT_ID}" = "x${subnetOwnerId}" ]]; then
   ## Shared Subnets (VPC) are not supported in Amazon ECS Exec Checker
   printf "${COLOR_RED}CHECK FAILED${COLOR_YELLOW}\n"
   printf "     Amazon ECS Exec Checker doesn't support VPC endpoint validation for AWS RAM shared VPC/subnets.\n"
-  printf "     Contact your administrator to confirm if the following resources require an additional VPC endpoint configuration.\n"
-  printf "     - VPC Endpoint: ${requiredEndpoint}\n"
-  printf "     - Resources: ${taskVpcId} and ${taskSubnetId}${COLOR_DEFAULT}\n"
+  printf "     Contact your administrator to find if the following resources require to have an additional VPC endpoint.\n"
+  printf "     - Resources: ${taskVpcId} and ${taskSubnetId}\n"
+  printf "     - VPC Endpoint: ${requiredEndpoint}${COLOR_DEFAULT}\n"
 else
   ## List Vpc Endpoints
   vpcEndpointsJson=$(${AWS_CLI_BIN} ec2 describe-vpc-endpoints \
