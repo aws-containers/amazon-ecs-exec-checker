@@ -499,7 +499,7 @@ if [[ "x${taskRoleArn}" = "xnull" ]]; then
 fi
 
 if [[ ! "x${hasRole}" = "xtrue" ]]; then
-  printf "${COLOR_DEFAULT}  EC2 or Task Role       | ${COLOR_RED}Not Configured"
+  printf "${COLOR_DEFAULT}  EC2 or Task Role       | ${COLOR_RED}Not Configured\n"
 else
   if [[ "x${isEC2Role}" = "xtrue" ]]; then
     printf "${COLOR_DEFAULT}  EC2 Role Permissions   | "
