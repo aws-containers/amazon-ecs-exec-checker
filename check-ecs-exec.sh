@@ -48,6 +48,9 @@ set -euo pipefail
 # e.g. AWS_CLI_BIN=aws-v1 ./check-ecs-exec.sh YOUR_ECS_CLUSTER_NAME YOUR_ECS_TASK_ID
 AWS_CLI_BIN=${AWS_CLI_BIN:-aws}
 
+# Force AWS CLI output format to json to use jq to parse its output
+export AWS_DEFAULT_OUTPUT=json
+
 # Colors for output
 COLOR_DEFAULT='\033[0m'
 COLOR_RED='\033[0;31m'
