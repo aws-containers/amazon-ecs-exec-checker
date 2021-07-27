@@ -543,6 +543,7 @@ else
     kmsEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
       --policy-source-arn "${taskRoleArn}" \
       --action-names "${kmsDecrypt}" \
+      --resource-arns "${kmsKeyId}" \
       --output json \
       | jq -r ".EvaluationResults[0].EvalDecision")
     showEvalResult "${kmsEvalResult}" "${kmsDecrypt}"
