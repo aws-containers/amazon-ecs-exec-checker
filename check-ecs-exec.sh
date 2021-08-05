@@ -256,6 +256,7 @@ else
     printf "${COLOR_YELLOW}Not Configured"
   else
     printf "${kmsKeyId}"
+    kmsKeyArn=$(${AWS_CLI_BIN} kms describe-key --key-id $kmsKeyId --query 'KeyMetadata.Arn' --output text)
   fi
   printf "\n"
 
@@ -312,7 +313,7 @@ if [[ ! "x${kmsKeyId}" = "xnull" ]]; then
   kmsGenerateDataKeyResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
     --policy-source-arn "${MY_IAM_ARN}" \
     --action-names "${kmsGenerateDataKey}" \
-    --resource-arns "${kmsKeyId}" \
+    --resource-arns "${kmsKeyArn}" \
     --output json \
     | jq -r ".EvaluationResults[0].EvalDecision")
   showEvalResult "${kmsGenerateDataKeyResult}" "${kmsGenerateDataKey}"
@@ -543,7 +544,7 @@ else
     kmsEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
       --policy-source-arn "${taskRoleArn}" \
       --action-names "${kmsDecrypt}" \
-      --resource-arns "${kmsKeyId}" \
+      --resource-arns "${kmsKeyArn}" \
       --output json \
       | jq -r ".EvaluationResults[0].EvalDecision")
     showEvalResult "${kmsEvalResult}" "${kmsDecrypt}"
