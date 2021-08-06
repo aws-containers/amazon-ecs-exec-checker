@@ -616,13 +616,15 @@ fi
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
 requiredEndpoint="com.amazonaws.${AWS_REGION}.ssmmessages"
 taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
-taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0].details[] | select(.name==\"subnetId\") | .value")
-subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
 if [[ "x${taskNetworkingAttachment}" = "xnull" ]]; then
   ## bridge/host networking (only for EC2)
   taskVpcId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].attributes[] | select(.name==\"ecs.vpc-id\") | .value")
+  taskSubnetId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].attributes[] | select(.name==\"ecs.subnet-id\") | .value")
+  subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
 else
   ## awsvpc networking (for both EC2 and Fargate)
+  taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0].details[] | select(.name==\"subnetId\") | .value")
+  subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
   taskVpcId=$(echo "${subnetJson}" | jq -r ".Subnets[0].VpcId")
 fi
 ## Obtain the ownerID of subnet's owner to check if the subnet is shared via AWS RAM (which check-ecs-exec.sh doesn't support today)
