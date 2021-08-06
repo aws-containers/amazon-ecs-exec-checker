@@ -21,9 +21,11 @@ set -euo pipefail
 ##   https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
 ##
 
-## NOTE: This script needs the following permissions. 
-##       If you use an IAM user with an assumed role to run the script,
-##       then you need allow the "iam:ListRoles" action in addition to the following.
+## NOTE: This script at least needs the following permissions. 
+##       1. If you use an IAM user with an assumed role to run the script,
+##          then you need allow the "iam:ListRoles" action in addition to the following.
+##       2. If you configured your ECS cluster to use KMS key for ECS Exec,
+##          then you need allow the "kms:DescribeKey" action in addition to the following.
 ## {
 ##     "Version": "2012-10-17",
 ##     "Statement": [
@@ -239,6 +241,7 @@ executeCommandConfigurationJson=$(echo "${describedClusterJson}" \
 printf "${COLOR_DEFAULT}  Cluster Configuration  |"
 
 kmsKeyId="null"
+kmsKeyArn="null"
 logging="null"
 s3BucketName="null"
 s3KeyPrefix="null"
