@@ -21,7 +21,7 @@ set -euo pipefail
 ##   https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
 ##
 
-## NOTE: This script at least needs the following permissions. 
+## NOTE: This script at least needs the following permissions.
 ##       1. If you use an IAM user with an assumed role to run the script,
 ##          then you need allow the "iam:ListRoles" action in addition to the following.
 ##       2. If you configured your ECS cluster to use KMS key for ECS Exec,
@@ -324,7 +324,7 @@ fi
 ## Check for ensuring "I cannot" call ssm:StartSession (yellow)
 ### See the "Limiting access to the Start Session action" section at https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-limit-access-start-session
 ssmStartSession="ssm:StartSession"
-printf "${COLOR_DEFAULT}     ${ssmStartSession} denied?: "
+printf "${COLOR_DEFAULT}     ${ssmStartSession}: "
 ssmSessionEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
     --policy-source-arn "${MY_IAM_ARN}" \
     --action-names "${ssmStartSession}" \
@@ -332,9 +332,9 @@ ssmSessionEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
     --output json \
     | jq -r ".EvaluationResults[0].EvalDecision")
 if [[ "x${ssmSessionEvalResult}" = "xallowed" ]]; then
-  printf "${COLOR_YELLOW}"
-else
   printf "${COLOR_GREEN}"
+else
+  printf "${COLOR_YELLOW}"
 fi
 printf "${ssmSessionEvalResult}\n"
 
@@ -584,7 +584,8 @@ else
   ### CloudWatch Logs
   if [[ ! "x${cloudWatchLogGroupName}" = "xnull" ]]; then
     printf "${COLOR_DEFAULT}     -----\n"
-    # For Resource "*"
+    printf "${COLOR_DEFAULT}     For Resource "*"\n"
+    printf "${COLOR_DEFAULT}     -----\n"
     logsDescribeLogGroup="logs:DescribeLogGroups"
     logsDescribeLogGroupEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
       --policy-source-arn "${taskRoleArn}" \
@@ -592,16 +593,20 @@ else
       --output json \
       | jq -r ".EvaluationResults[0].EvalDecision")
     showEvalResult "${logsDescribeLogGroupEvalResult}" "${logsDescribeLogGroup}"
-    # For Resource "${cloudWatchLogGroupName}"
+    printf "${COLOR_DEFAULT}     -----\n"
+    printf "${COLOR_DEFAULT}     For Resource "${cloudWatchLogGroupName}"\n"
+    printf "${COLOR_DEFAULT}     -----\n"
     cwlogGroupArn="arn:aws:logs:${AWS_REGION}:${ACCOUNT_ID}:log-group:${cloudWatchLogGroupName}:*"
     logsCreateLogStream="logs:CreateLogStream"
     logsDescribeLogStreams="logs:DescribeLogStreams"
     logsPutLogEvents="logs:PutLogEvents"
     logsEvalResultsJson=$(${AWS_CLI_BIN} iam simulate-principal-policy \
       --policy-source-arn "${taskRoleArn}" \
-      --action-names "${logsCreateLogStream}" "${logsDescribeLogStreams}" "${logsPutLogEvents}" \
+      --action-names "${logsCreateLogStream}" "${logsDescribeLogStreams}" "${logsPutLogEvents}" "${logsDescribeLogGroup}"\
       --resource-arns "${cwlogGroupArn}" \
       --output json)
+    logsDescribeLogGroupResult=$(readEvalDecision "${logsEvalResultsJson}" "${logsDescribeLogGroup}")
+    showEvalResult "${logsDescribeLogGroupResult}" "${logsDescribeLogGroup}"
     logsCreateLogStreamResult=$(readEvalDecision "${logsEvalResultsJson}" "${logsCreateLogStream}")
     showEvalResult "${logsCreateLogStreamResult}" "${logsCreateLogStream}"
     logsDescribeLogStreamsResult=$(readEvalDecision "${logsEvalResultsJson}" "${logsDescribeLogStreams}")
@@ -656,7 +661,7 @@ else
       fi
     done
 
-    printf "    Found existing endpoints for ${taskVpcId}:\n"  
+    printf "   Found existing endpoints for ${taskVpcId}:\n"
     for vpe in $vpcEndpoints; do
       if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
         printf "      - ${COLOR_GREEN}${vpe}${COLOR_DEFAULT}\n"
