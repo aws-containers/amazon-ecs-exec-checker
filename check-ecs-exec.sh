@@ -62,7 +62,7 @@ COLOR_GREEN='\033[0;32m'
 # Validation for required parameters
 CLUSTER_NAME=${1:-None} # A cluster name or a full ARN of the cluster
 TASK_ID=${2:-None} # A task ID or a full ARN of the task
-if [[ "x${CLUSTER_NAME}" = "xNone" || "x${TASK_ID}" = "xNone" ]]; then
+if [[ "${CLUSTER_NAME}" = "None" || "${TASK_ID}" = "None" ]]; then
   printf "${COLOR_RED}Usage:\n" >&2
   printf "  ./check-ecs-exec.sh YOUR_ECS_CLUSTER_NAME YOUR_ECS_TASK_ID\n" >&2
   exit 1
@@ -95,7 +95,7 @@ showEvalResult() {
     evalResult=$1
     actionName=$2
     printf "${COLOR_DEFAULT}     ${actionName}: "
-    if [[ "x${evalResult}" = "xallowed" ]]; then
+    if [[ "${evalResult}" = "allowed" ]]; then
       printf "${COLOR_GREEN}${evalResult}\n"
     else
       printf "${COLOR_RED}${evalResult}\n"
@@ -132,7 +132,7 @@ source_profile=$(${AWS_CLI_BIN} configure get source_profile || echo "")
 if [ "${AWS_REGION}" = "" ] && [ "${source_profile}" != "" ]; then
   export AWS_REGION=$(${AWS_CLI_BIN} configure get region --profile ${source_profile} || echo "")
 fi
-if [[ "x${AWS_REGION}" = "x" ]]; then
+if [[ "${AWS_REGION}" = "" ]]; then
   printf "${COLOR_RED}Pre-flight check failed: Missing AWS region. Use the \`aws configure set default.region\` command or set the \"AWS_REGION\" environment variable.\n" >&2
   exit 1
 fi
@@ -179,7 +179,7 @@ case "${CALLER_IAM_ARN}" in
   *:assumed-role/*) MY_IAM_ARN=$(getRoleArnForAssumedRole "${callerIdentityJson}");;
   * ) printf "${COLOR_RED}Pre-flight check failed: The ARN \"${CALLER_IAM_ARN}\" associated with the caller(=you) is not supported. Try again either with one of an IAM user, an IAM role, or an assumed IAM role.\n" >&2 && exit 1;;
 esac
-if [[ "x${MY_IAM_ARN}" = "x" ]]; then
+if [[ "${MY_IAM_ARN}" = "" ]]; then
   printf "${COLOR_RED}Unknown error: Failed to get the role ARN of the caller(=you).\n" >&2
   exit 1
 fi
@@ -190,7 +190,7 @@ describedTaskJson=$(${AWS_CLI_BIN} ecs describe-tasks \
   --tasks "${TASK_ID}" \
   --output json)
 existTask=$(echo "${describedTaskJson}" | jq -r ".tasks[0].taskDefinitionArn")
-if [[ "x${existTask}" = "xnull" ]]; then
+if [[ "${existTask}" = "null" ]]; then
   printf "${COLOR_RED}Pre-flight check failed: The specified ECS task does not exist.\n\
 Make sure the parameters you have specified for cluster \"${CLUSTER_NAME}\" and task \"${TASK_ID}\" are both valid.\n"
   exit 1
@@ -198,7 +198,7 @@ fi
 
 # Check whether the AWS CLI v1.19.28/v2.1.30 or later exists
 executeCommandEnabled=$(echo "${describedTaskJson}" | jq -r ".tasks[0].enableExecuteCommand")
-if [[ "x${executeCommandEnabled}" = "xnull" ]]; then
+if [[ "${executeCommandEnabled}" = "null" ]]; then
   printf "${COLOR_RED}Pre-flight check failed: ECS Exec requires the AWS CLI v1.19.28/v2.1.30 or later.\n\
 Please update the AWS CLI and try again?\n\
   For v2: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html\n\
@@ -248,26 +248,26 @@ s3KeyPrefix="null"
 s3Encryption="null"
 cloudWatchLogGroupName="null"
 cloudWatchLogEncryptionEnabled="null"
-if [[ "x${executeCommandConfigurationJson}" = "xnull" ]]; then
+if [[ "${executeCommandConfigurationJson}" = "null" ]]; then
   printf "${COLOR_YELLOW} Audit Logging Not Configured"
 else
   printf "\n"
 
   kmsKeyId=$(echo "${executeCommandConfigurationJson}" | jq -r ".kmsKeyId")
   printf "${COLOR_DEFAULT}     KMS Key       : "
-  if [[ "x${kmsKeyId}" = "xnull" ]]; then
+  if [[ "${kmsKeyId}" = "null" ]]; then
     printf "${COLOR_YELLOW}Not Configured"
   else
     printf "${kmsKeyId}"
-    kmsKeyArn=$(${AWS_CLI_BIN} kms describe-key --key-id $kmsKeyId --query 'KeyMetadata.Arn' --output text)
+    kmsKeyArn=$(${AWS_CLI_BIN} kms describe-key --key-id "${kmsKeyId}" --query 'KeyMetadata.Arn' --output text)
   fi
   printf "\n"
 
   logging=$(echo "${executeCommandConfigurationJson}" | jq -r ".logging")
   printf "${COLOR_DEFAULT}     Audit Logging : "
-  if [[ "x${logging}" = "xnull" ]]; then
+  if [[ "${logging}" = "null" ]]; then
     printf "${COLOR_YELLOW}Not Configured"
-  elif [[ "x${logging}" = "xNONE" ]]; then
+  elif [[ "${logging}" = "NONE" ]]; then
     printf "${COLOR_YELLOW}Disabled"
   else
     printf "${logging}"
@@ -278,11 +278,11 @@ else
   s3KeyPrefix=$(echo "${executeCommandConfigurationJson}" | jq -r ".logConfiguration.s3KeyPrefix")
   s3Encryption=$(echo "${executeCommandConfigurationJson}" | jq -r ".logConfiguration.s3EncryptionEnabled")
   printf "${COLOR_DEFAULT}     S3 Bucket Name: "
-  if [[ "x${s3BucketName}" = "xnull" ]]; then
+  if [[ "${s3BucketName}" = "null" ]]; then
     printf "Not Configured"
   else
     printf "${s3BucketName}"
-    if [[ ! "x${s3KeyPrefix}" = "xnull" ]]; then
+    if [[ ! "${s3KeyPrefix}" = "null" ]]; then
       printf ", Key Prefix: ${s3KeyPrefix}"
     fi
     printf ", Encryption Enabled: ${s3Encryption}"
@@ -292,7 +292,7 @@ else
   cloudWatchLogGroupName=$(echo "${executeCommandConfigurationJson}" | jq -r ".logConfiguration.cloudWatchLogGroupName")
   cloudWatchLogEncryptionEnabled=$(echo "${executeCommandConfigurationJson}" | jq -r ".logConfiguration.cloudWatchEncryptionEnabled")
   printf "${COLOR_DEFAULT}     CW Log Group  : "
-  if [[ "x${cloudWatchLogGroupName}" = "xnull" ]]; then
+  if [[ "${cloudWatchLogGroupName}" = "null" ]]; then
     printf "Not Configured"
   else
     printf "${cloudWatchLogGroupName}"
@@ -311,7 +311,7 @@ ecsExecEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
     --output json \
     | jq -r ".EvaluationResults[0].EvalDecision")
 showEvalResult "${ecsExecEvalResult}" "${ecsExecuteCommand}"
-if [[ ! "x${kmsKeyId}" = "xnull" ]]; then
+if [[ ! "${kmsKeyId}" = "null" ]]; then
   kmsGenerateDataKey="kms:GenerateDataKey"
   kmsGenerateDataKeyResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
     --policy-source-arn "${MY_IAM_ARN}" \
@@ -331,7 +331,7 @@ ssmSessionEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
     --resource-arns "arn:aws:ecs:${AWS_REGION}:${ACCOUNT_ID}:task/${CLUSTER_NAME}/${TASK_ID}" \
     --output json \
     | jq -r ".EvaluationResults[0].EvalDecision")
-if [[ "x${ssmSessionEvalResult}" = "xallowed" ]]; then
+if [[ "${ssmSessionEvalResult}" = "allowed" ]]; then
   printf "${COLOR_YELLOW}"
 else
   printf "${COLOR_GREEN}"
@@ -355,7 +355,7 @@ printf "${COLOR_DEFAULT}\n"
 launchType=$(echo "${describedTaskJson}" | jq -r ".tasks[0].launchType")
 describedContainerInstanceJson=""
 printf "${COLOR_DEFAULT}  Launch Type            | "
-if [[ "x${launchType}" = "xFARGATE" ]]; then # For FARGATE Launch Type
+if [[ "${launchType}" = "FARGATE" ]]; then # For FARGATE Launch Type
   printf "${COLOR_GREEN}Fargate\n"
   # Check the PV
   printf "${COLOR_DEFAULT}  Platform Version       | "
@@ -367,7 +367,7 @@ if [[ "x${launchType}" = "xFARGATE" ]]; then # For FARGATE Launch Type
     printf "${COLOR_RED}${pv} (Required: >= ${requiredPV})"
   fi
   printf "\n"
-elif [[ "x${launchType}" = "xEC2" ]]; then # For EC2 Launch Type
+elif [[ "${launchType}" = "EC2" ]]; then # For EC2 Launch Type
   printf "${COLOR_GREEN}EC2\n"
   # Check the ECS-Agent version
   containerInstanceArn=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containerInstanceArn")
@@ -390,7 +390,7 @@ fi
 
 # 5. Check whether the `execute-command` option is enabled for the task
 printf "${COLOR_DEFAULT}  Exec Enabled for Task  | "
-if [[ "x${executeCommandEnabled}" = "xtrue" ]]; then
+if [[ "${executeCommandEnabled}" = "true" ]]; then
   printf "${COLOR_GREEN}OK"
 else
   printf "${COLOR_RED}NO"
@@ -401,7 +401,7 @@ printf "${COLOR_DEFAULT}\n"
 printf "${COLOR_DEFAULT}  Container-Level Checks | \n"
 printf "${COLOR_DEFAULT}    ----------\n"
 printf "${COLOR_DEFAULT}      Managed Agent Status"
-if [[ "x${executeCommandEnabled}" = "xfalse" ]]; then
+if [[ "${executeCommandEnabled}" = "false" ]]; then
   printf " - ${COLOR_YELLOW}SKIPPED\n"
   printf "${COLOR_DEFAULT}    ----------\n"
 else
@@ -421,7 +421,7 @@ else
       * ) printf "${COLOR_GREEN}RUNNING";;
     esac
     printf "${COLOR_DEFAULT} for \"${containerName}\""
-    if [[ "x${status}" = "xSTOPPED" ]]; then
+    if [[ "${status}" = "STOPPED" ]]; then
       printf " - LastStartedAt: ${lastStartedAt}"
     fi
     printf "\n"
@@ -474,26 +474,26 @@ done
 # 9. Check the task role permissions
 overriddenTaskRole=true
 taskRoleArn=$(echo "${describedTaskJson}" | jq -r ".tasks[0].overrides.taskRoleArn")
-if [[ "x${taskRoleArn}" = "xnull" ]]; then
+if [[ "${taskRoleArn}" = "null" ]]; then
   overriddenTaskRole=false
   taskRoleArn=$(echo "${taskDefJson}" | jq -r ".taskDefinition.taskRoleArn")
 fi
 
 hasRole=true
 isEC2Role=false
-if [[ "x${taskRoleArn}" = "xnull" ]]; then
+if [[ "${taskRoleArn}" = "null" ]]; then
   ## When the task runs on EC2 without a task role then we should check the instance profile
-  if [[ "x${launchType}" = "xEC2" ]]; then
+  if [[ "${launchType}" = "EC2" ]]; then
     ec2InstanceId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].ec2InstanceId")
     instanceProfileArn=$(${AWS_CLI_BIN} ec2 describe-instances --instance-ids "${ec2InstanceId}" | jq -r ".Reservations[0].Instances[0].IamInstanceProfile.Arn")
-    if [[ "x${instanceProfileArn}" = "xnull" ]]; then
+    if [[ "${instanceProfileArn}" = "null" ]]; then
       hasRole=false
     else
       instanceProfileName=$(echo "${instanceProfileArn}" | sed 's/arn:aws:iam::.*:instance-profile\///g')
       taskRoleArn=$(${AWS_CLI_BIN} iam get-instance-profile \
         --instance-profile-name "${instanceProfileName}" \
         | jq -r ".InstanceProfile.Roles[0].Arn")
-      if [[ "x${taskRoleArn}" = "xnull" ]]; then
+      if [[ "${taskRoleArn}" = "null" ]]; then
         hasRole=false
       else
         isEC2Role=true
@@ -505,16 +505,16 @@ if [[ "x${taskRoleArn}" = "xnull" ]]; then
   fi
 fi
 
-if [[ ! "x${hasRole}" = "xtrue" ]]; then
+if [[ ! "${hasRole}" = "true" ]]; then
   printf "${COLOR_DEFAULT}  EC2 or Task Role       | ${COLOR_RED}Not Configured\n"
 else
-  if [[ "x${isEC2Role}" = "xtrue" ]]; then
+  if [[ "${isEC2Role}" = "true" ]]; then
     printf "${COLOR_DEFAULT}  EC2 Role Permissions   | "
   else
     printf "${COLOR_DEFAULT}  Task Role Permissions  | "
   fi
   printf "${taskRoleArn}"
-  if [[ "x${overriddenTaskRole}" = "xtrue" ]]; then
+  if [[ "${overriddenTaskRole}" = "true" ]]; then
     printf " (Overridden)"
   fi
   printf "\n"
@@ -541,7 +541,7 @@ else
 
   ## Optional Permissions (Might be required if audit-logging is enabled)
   ### KMS
-  if [[ ! "x${kmsKeyId}" = "xnull" ]]; then
+  if [[ ! "${kmsKeyId}" = "null" ]]; then
     printf "${COLOR_DEFAULT}     -----\n"
     kmsDecrypt="kms:Decrypt"
     kmsEvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
@@ -553,12 +553,12 @@ else
     showEvalResult "${kmsEvalResult}" "${kmsDecrypt}"
   fi
   ### S3 Bucket
-  if [[ ! "x${s3BucketName}" = "xnull" ]]; then
+  if [[ ! "${s3BucketName}" = "null" ]]; then
     printf "${COLOR_DEFAULT}     -----\n"
     s3PutObject="s3:PutObject"
     bucketArn="arn:aws:s3:::${s3BucketName}"
     resourceArn=""
-    if [[ ! "x${s3KeyPrefix}" = "xnull" ]]; then
+    if [[ ! "${s3KeyPrefix}" = "null" ]]; then
       resourceArn="${bucketArn}/${s3KeyPrefix}*"
     else
       resourceArn="${bucketArn}/*"
@@ -570,7 +570,7 @@ else
       --output json \
       | jq -r ".EvaluationResults[0].EvalDecision")
     showEvalResult "${s3EvalResult}" "${s3PutObject}"
-    if [[ "x${s3Encryption}" = "xtrue" ]]; then
+    if [[ "${s3Encryption}" = "true" ]]; then
       s3GetEncryptionConfiguration="s3:GetEncryptionConfiguration"
       s3EvalResult=$(${AWS_CLI_BIN} iam simulate-principal-policy \
         --policy-source-arn "${taskRoleArn}" \
@@ -582,7 +582,7 @@ else
     fi
   fi
   ### CloudWatch Logs
-  if [[ ! "x${cloudWatchLogGroupName}" = "xnull" ]]; then
+  if [[ ! "${cloudWatchLogGroupName}" = "null" ]]; then
     printf "${COLOR_DEFAULT}     -----\n"
     # For Resource "*"
     logsDescribeLogGroup="logs:DescribeLogGroups"
@@ -616,7 +616,7 @@ fi
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
 requiredEndpoint="com.amazonaws.${AWS_REGION}.ssmmessages"
 taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
-if [[ "x${taskNetworkingAttachment}" = "xnull" ]]; then
+if [[ "${taskNetworkingAttachment}" = "null" ]]; then
   ## bridge/host networking (only for EC2)
   taskVpcId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].attributes[] | select(.name==\"ecs.vpc-id\") | .value")
   taskSubnetId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].attributes[] | select(.name==\"ecs.subnet-id\") | .value")
@@ -630,7 +630,7 @@ fi
 ## Obtain the ownerID of subnet's owner to check if the subnet is shared via AWS RAM (which check-ecs-exec.sh doesn't support today)
 subnetOwnerId=$(echo "${subnetJson}" | jq -r ".Subnets[0].OwnerId")
 printf "${COLOR_DEFAULT}  VPC Endpoints          | "
-if [[ ! "x${ACCOUNT_ID}" = "x${subnetOwnerId}" ]]; then
+if [[ ! "${ACCOUNT_ID}" = "${subnetOwnerId}" ]]; then
   ## Shared Subnets (VPC) are not supported in Amazon ECS Exec Checker
   printf "${COLOR_RED}CHECK FAILED${COLOR_YELLOW}\n"
   printf "     Amazon ECS Exec Checker doesn't support VPC endpoint validation for AWS RAM shared VPC/subnets.\n"
@@ -642,7 +642,7 @@ else
   vpcEndpointsJson=$(${AWS_CLI_BIN} ec2 describe-vpc-endpoints \
     --filters Name=vpc-id,Values="${taskVpcId}")
   vpcEndpoints=$(echo "${vpcEndpointsJson}" | tr -d '\n' | jq -r ".VpcEndpoints[]")
-  if [[ "x${vpcEndpoints}" = "x" ]]; then
+  if [[ "${vpcEndpoints}" = "" ]]; then
     printf "${COLOR_GREEN}SKIPPED ${COLOR_DEFAULT}(${taskVpcId} - No additional VPC endpoints required)\n"
   else
     # Check whether an ssmmessages VPC endpoint exists
@@ -650,7 +650,7 @@ else
     printf "\n"
     ssmsessionVpcEndpointExists=false
     for vpe in $vpcEndpoints; do
-      if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
+      if [[ "${vpe}" = "${requiredEndpoint}" ]]; then
         ssmsessionVpcEndpointExists=true
         break
       fi
@@ -658,13 +658,13 @@ else
 
     printf "    Found existing endpoints for ${taskVpcId}:\n"  
     for vpe in $vpcEndpoints; do
-      if [[ "x${vpe}" = "x${requiredEndpoint}" ]]; then
+      if [[ "${vpe}" = "${requiredEndpoint}" ]]; then
         printf "      - ${COLOR_GREEN}${vpe}${COLOR_DEFAULT}\n"
       else
         printf "      - ${COLOR_DEFAULT}${vpe}\n"
       fi
     done
-    if [[ "x${ssmsessionVpcEndpointExists}" = "xfalse" ]]; then
+    if [[ "${ssmsessionVpcEndpointExists}" = "false" ]]; then
       printf "    SSM PrivateLink \"${COLOR_YELLOW}${requiredEndpoint}${COLOR_DEFAULT}\" not found. You must ensure your task has proper outbound internet connectivity."
     fi
   fi
