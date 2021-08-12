@@ -130,7 +130,8 @@ export AWS_REGION=${AWS_REGION:-$REGION}
 # Check region configuration in "source_profile" if the user uses MFA configurations
 source_profile=$(${AWS_CLI_BIN} configure get source_profile || echo "")
 if [ "${AWS_REGION}" = "" ] && [ "${source_profile}" != "" ]; then
-  export AWS_REGION=$(${AWS_CLI_BIN} configure get region --profile ${source_profile} || echo "")
+  region=$(${AWS_CLI_BIN} configure get region --profile "${source_profile}" || echo "")
+  export AWS_REGION="${region}"
 fi
 if [[ "${AWS_REGION}" = "" ]]; then
   printf "${COLOR_RED}Pre-flight check failed: Missing AWS region. Use the \`aws configure set default.region\` command or set the \"AWS_REGION\" environment variable.\n" >&2
@@ -165,9 +166,12 @@ if [ "${AWS_MFA_SERIAL}" != "" ] && [ "${ROLE_TO_BE_ASSUMED}" == "" ] && [ "${SO
   done
 
   tmpCreds=$(${AWS_CLI_BIN} sts get-session-token --serial-number "${AWS_MFA_SERIAL}" --token-code "${mfa_code}")
-  export AWS_ACCESS_KEY_ID=$( echo "${tmpCreds}" | jq -r .Credentials.AccessKeyId )
-  export AWS_SECRET_ACCESS_KEY=$( echo "${tmpCreds}" | jq -r .Credentials.SecretAccessKey )
-  export AWS_SESSION_TOKEN=$( echo "${tmpCreds}" | jq -r .Credentials.SessionToken )
+  accessKey=$( echo "${tmpCreds}" | jq -r .Credentials.AccessKeyId )
+  secretKey=$( echo "${tmpCreds}" | jq -r .Credentials.SecretAccessKey )
+  sessionToken=$( echo "${tmpCreds}" | jq -r .Credentials.SessionToken )
+  export AWS_ACCESS_KEY_ID="${accessKey}"
+  export AWS_SECRET_ACCESS_KEY="${secretKey}"
+  export AWS_SESSION_TOKEN="${sessionToken}"
 fi
 
 # Find caller identity
