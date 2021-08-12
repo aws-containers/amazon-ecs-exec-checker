@@ -3,9 +3,9 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
-CHECKER_VERSION=v0.7
-
 # shellcheck disable=SC2059
+
+CHECKER_VERSION=v0.7
 
 # Script Name: check-ecs-exec.sh
 # Usage      : bash ./check-ecs-exec.sh <YOUR_ECS_CLUSTER_NAME> <YOUR_ECS_TASK_ID>
