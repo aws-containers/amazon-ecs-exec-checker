@@ -23,9 +23,9 @@ set -euo pipefail
 
 ## NOTE: This script at least needs the following permissions. 
 ##       1. If you use an IAM user with an assumed role to run the script,
-##          then you need allow the "iam:ListRoles" action in addition to the following.
+##          then you need to allow the "iam:ListRoles" action in addition to the following.
 ##       2. If you configured your ECS cluster to use KMS key for ECS Exec,
-##          then you need allow the "kms:DescribeKey" action in addition to the following.
+##          then you need to allow the "kms:DescribeKey" action in addition to the following.
 ## {
 ##     "Version": "2012-10-17",
 ##     "Statement": [
@@ -638,7 +638,7 @@ if [[ ! "${ACCOUNT_ID}" = "${subnetOwnerId}" ]]; then
   ## Shared Subnets (VPC) are not supported in Amazon ECS Exec Checker
   printf "${COLOR_RED}CHECK FAILED${COLOR_YELLOW}\n"
   printf "     Amazon ECS Exec Checker doesn't support VPC endpoint validation for AWS RAM shared VPC/subnets.\n"
-  printf "     Contact your administrator to find if the following resources require to have an additional VPC endpoint.\n"
+  printf "     Check or contact your administrator to find if additional VPC endpoints are required by the following resources.\n"
   printf "     - Resources: ${taskVpcId} and ${taskSubnetId}\n"
   printf "     - VPC Endpoint: ${requiredEndpoint}${COLOR_DEFAULT}\n"
 else
