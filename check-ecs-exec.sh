@@ -65,6 +65,7 @@ TASK_ID=${2:-None} # A task ID or a full ARN of the task
 if [[ "${CLUSTER_NAME}" = "None" || "${TASK_ID}" = "None" ]]; then
   printf "${COLOR_RED}Usage:\n" >&2
   printf "  ./check-ecs-exec.sh YOUR_ECS_CLUSTER_NAME YOUR_ECS_TASK_ID\n" >&2
+  printf "${COLOR_DEFAULT}"
   exit 1
 fi
 
@@ -112,6 +113,7 @@ printSectionHeaderLine
 command -v jq >/dev/null 2>&1 && status="$?" || status="$?"
 if [[ ! "${status}" = 0 ]]; then
   printf "${COLOR_RED}Pre-flight check failed: \`jq\` command is missing\n" >&2
+  printf "${COLOR_DEFAULT}"
   exit 1
 fi
 printf "${COLOR_DEFAULT}  jq      | ${COLOR_GREEN}OK ${COLOR_DEFAULT}($(which jq))\n"
@@ -120,6 +122,7 @@ printf "${COLOR_DEFAULT}  jq      | ${COLOR_GREEN}OK ${COLOR_DEFAULT}($(which jq
 command -v "${AWS_CLI_BIN}" >/dev/null 2>&1 && status="$?" || status="$?"
 if [[ ! "${status}" = 0 ]]; then
   printf "${COLOR_RED}Pre-flight check failed: \`${AWS_CLI_BIN}\` command is missing\n" >&2
+  printf "${COLOR_DEFAULT}"
   exit 1
 fi
 printf "${COLOR_DEFAULT}  AWS CLI | ${COLOR_GREEN}OK ${COLOR_DEFAULT}($(which "${AWS_CLI_BIN}"))\n"
@@ -135,6 +138,7 @@ if [ "${AWS_REGION}" = "" ] && [ "${source_profile}" != "" ]; then
 fi
 if [[ "${AWS_REGION}" = "" ]]; then
   printf "${COLOR_RED}Pre-flight check failed: Missing AWS region. Use the \`aws configure set default.region\` command or set the \"AWS_REGION\" environment variable.\n" >&2
+  printf "${COLOR_DEFAULT}"
   exit 1
 fi
 
@@ -181,10 +185,11 @@ CALLER_IAM_ARN=$(echo "${callerIdentityJson}" | jq -r ".Arn")
 case "${CALLER_IAM_ARN}" in
   *:user/*|*:role/*|*:group/* ) MY_IAM_ARN="${CALLER_IAM_ARN}";;
   *:assumed-role/*) MY_IAM_ARN=$(getRoleArnForAssumedRole "${callerIdentityJson}");;
-  * ) printf "${COLOR_RED}Pre-flight check failed: The ARN \"${CALLER_IAM_ARN}\" associated with the caller(=you) is not supported. Try again either with one of an IAM user, an IAM role, or an assumed IAM role.\n" >&2 && exit 1;;
+  * ) printf "${COLOR_RED}Pre-flight check failed: The ARN \"${CALLER_IAM_ARN}\" associated with the caller(=you) is not supported. Try again either with one of an IAM user, an IAM role, or an assumed IAM role.\n" >&2 && printf "${COLOR_DEFAULT}" && exit 1;;
 esac
 if [[ "${MY_IAM_ARN}" = "" ]]; then
   printf "${COLOR_RED}Unknown error: Failed to get the role ARN of the caller(=you).\n" >&2
+  printf "${COLOR_DEFAULT}"
   exit 1
 fi
 
@@ -197,6 +202,7 @@ existTask=$(echo "${describedTaskJson}" | jq -r ".tasks[0].taskDefinitionArn")
 if [[ "${existTask}" = "null" ]]; then
   printf "${COLOR_RED}Pre-flight check failed: The specified ECS task does not exist.\n\
 Make sure the parameters you have specified for cluster \"${CLUSTER_NAME}\" and task \"${TASK_ID}\" are both valid.\n"
+  printf "${COLOR_DEFAULT}"
   exit 1
 fi
 
@@ -207,6 +213,7 @@ if [[ "${executeCommandEnabled}" = "null" ]]; then
 Please update the AWS CLI and try again?\n\
   For v2: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html\n\
   For v1: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv1.html\n"
+  printf "${COLOR_DEFAULT}"
   exit 1
 fi
 awsCliVersion=$(${AWS_CLI_BIN} --version 2>&1)
