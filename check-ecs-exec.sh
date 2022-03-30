@@ -674,4 +674,29 @@ else
   fi
 fi
 
+# 11. Check task definition containers for environment variables AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY
+# if AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY are defined in a container, they will be used by the SSM service
+# if the key defined does not have requirement permissions, the execute-command will not work.
+containerNameList=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[].name")
+idx=0
+printf "${COLOR_DEFAULT}  Environment Variables  | (${taskDefFamily}:${taskDefRevision})\n"
+for containerName in $containerNameList; do
+  printf "       ${COLOR_DEFAULT}$((idx+1)). container \"${containerName}\"\n"
+  # find AWS_ACCESS_KEY
+  printf "       ${COLOR_DEFAULT}- AWS_ACCESS_KEY"
+  AWS_ACCESS_KEY_FOUND=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].environment[] | select(.name==\"AWS_ACCESS_KEY\") | .name")
+  case "${AWS_ACCESS_KEY_FOUND}" in
+    *AWS_ACCESS_KEY* ) printf ": ${COLOR_YELLOW}defined\n";;
+    * ) printf ": ${COLOR_GREEN}not defined\n";;
+  esac
+  # find AWS_SECRET_ACCESS_KEY
+  printf "       ${COLOR_DEFAULT}- AWS_SECRET_ACCESS_KEY"
+  AWS_SECRET_ACCESS_KEY_FOUND=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].environment[] | select(.name==\"AWS_SECRET_ACCESS_KEY\") | .name")
+  case "${AWS_SECRET_ACCESS_KEY_FOUND}" in
+    *AWS_SECRET_ACCESS_KEY* ) printf ": ${COLOR_YELLOW}defined\n";;
+    * ) printf ": ${COLOR_GREEN}not defined\n";;
+  esac
+  idx=$((idx+1))
+done
+
 printf "\n"
