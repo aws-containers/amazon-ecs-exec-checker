@@ -8,7 +8,5 @@ pull_request_rules:
       - status-success=shellcheck
     actions:
       merge:
-        strict: smart
         method: squash
-        strict_method: merge
         commit_message: title+body
