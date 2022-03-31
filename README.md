@@ -125,6 +125,9 @@ The `check-ecs-exec.sh` found one or more VPC endpoints configured in the VPC fo
 18. **_🔴 VPC Endpoints | CHECK FAILED_**  
 The `check-ecs-exec.sh` doesn't support checking this item for shared VPC subnets using [AWS Resouce Access Manager (AWS RAM)](https://aws.amazon.com/ram/). In short, this may not an issue to use ECS Exec if your ECS task VPC doesn't have any VPC endpoint and the task has proper outbound internet connectivity. Make sure to consult your administrator with the official ECS Exec documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-considerations) to find if your VPC need to have an additional VPC endpoint.
 
+19. **🟡 Environment Variables : defined**  
+SSM uses the AWS SDK which uses the [default chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default) when determining authentication. This means if AWS_ACCESS_KEY and AWS_SECRET_ACCESS_KEY are defined in the environment variables and the permissions there do not provide the required permissions for SSM to work, then the execute-command will fail. It is recomended not to define these environment variables. 
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
