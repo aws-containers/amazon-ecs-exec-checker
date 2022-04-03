@@ -691,7 +691,7 @@ for containerName in $containerNameList; do
   esac
   # find AWS_ACCESS_KEY_ID
   printf "       ${COLOR_DEFAULT}- AWS_ACCESS_KEY_ID"
-  AAWS_ACCESS_KEY_ID_FOUND=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].environment[] | select(.name==\"AWS_ACCESS_KEY_ID\") | .name")
+  AWS_ACCESS_KEY_ID_FOUND=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].environment[] | select(.name==\"AWS_ACCESS_KEY_ID\") | .name")
   case "${AWS_ACCESS_KEY_ID_FOUND}" in
     *AWS_ACCESS_KEY_ID* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
     * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
