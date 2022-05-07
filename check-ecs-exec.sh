@@ -125,7 +125,7 @@ fi
 printf "${COLOR_DEFAULT}  AWS CLI | ${COLOR_GREEN}OK ${COLOR_DEFAULT}($(which "${AWS_CLI_BIN}"))\n"
 
 # Find AWS region
-REGION=$(${AWS_CLI_BIN} configure get region | sed -e 's/\r//g' || echo "")
+REGION=$(${AWS_CLI_BIN} configure get region | tr -d "\r" || echo "")
 export AWS_REGION=${AWS_REGION:-$REGION}
 # Check region configuration in "source_profile" if the user uses MFA configurations
 source_profile=$(${AWS_CLI_BIN} configure get source_profile || echo "")
