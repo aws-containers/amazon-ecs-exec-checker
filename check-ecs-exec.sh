@@ -363,7 +363,15 @@ if [[ "${launchType}" = "FARGATE" ]]; then # For FARGATE Launch Type
   printf "${COLOR_GREEN}Fargate\n"
   # Check the PV
   printf "${COLOR_DEFAULT}  Platform Version       | "
-  requiredPV="1.4.0"
+  
+  # Detect platform family to use correct platform version required
+  pf=$(echo "${describedTaskJson}" | jq -r ".tasks[0].platformFamily")
+  if [[ ${pf} == *"Windows"* ]]; then
+    requiredPV="1.0.0"  #1.0.0 minimum for windows
+  else
+    requiredPV="1.4.0"  #1.4.0 for others
+  fi
+  
   pv=$(echo "${describedTaskJson}" | jq -r ".tasks[0].platformVersion")
   if equalsOrGreaterVersion "${requiredPV}" "${pv}"; then
     printf "${COLOR_GREEN}${pv}"
