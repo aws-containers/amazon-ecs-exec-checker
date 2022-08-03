@@ -5,7 +5,6 @@ pull_request_rules:
       - -closed
       - "#approved-reviews-by>=1"
       - "#changes-requested-reviews-by=0"
-      - status-success=shellcheck
     actions:
       merge:
         method: squash
