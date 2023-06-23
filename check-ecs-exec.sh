@@ -711,6 +711,68 @@ for containerName in $containerNameList; do
     *AWS_SECRET_ACCESS_KEY* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
     * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
   esac
+  # find AWS_EXECUTION_ENV
+  printf "       ${COLOR_DEFAULT}- AWS_EXECUTION_ENV"
+  AWS_EXECUTION_ENV_FOUND=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].environment[] | select(.name==\"AWS_EXECUTION_ENV\") | .name")
+  case "${AWS_EXECUTION_ENV_FOUND}" in
+    *AWS_EXECUTION_ENV* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
+    * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
+  esac
+  # find AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
+  printf "       ${COLOR_DEFAULT}- AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
+  AWS_CONTAINER_CREDENTIALS_RELATIVE_URI_FOUND=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[${idx}].environment[] | select(.name==\"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI\") | .name")
+  case "${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI_FOUND}" in
+    *AWS_CONTAINER_CREDENTIALS_RELATIVE_URI* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
+    * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
+  esac
+
+  idx=$((idx+1))
+done
+
+# 12. Check task definition containers for secrets variables AWS_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_EXECUTION_ENV, AWS_CONTAINER_CREDENTIALS_RELATIVE_URI and AWS_SECRET_ACCESS_KEY
+# if AWS_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_EXECUTION_ENV, AWS_CONTAINER_CREDENTIALS_RELATIVE_URI, and AWS_SECRET_ACCESS_KEY are defined in a container, they will be used by the SSM service
+# if the key defined does not have requirement permissions, the execute-command will not work.
+containerNameList=$(echo "${taskDefJson}" | jq -r ".taskDefinition.containerDefinitions[].name")
+idx=0
+printf "${COLOR_DEFAULT}  Secrets Variables  | (${taskDefFamily}:${taskDefRevision})\n"
+for containerName in $containerNameList; do
+  printf "       ${COLOR_DEFAULT}$((idx+1)). container \"${containerName}\"\n"
+  # find AWS_ACCESS_KEY
+  printf "       ${COLOR_DEFAULT}- AWS_ACCESS_KEY"
+  AWS_ACCESS_KEY_FOUND=$(echo "${taskDefJson}" | jq -r "try .taskDefinition.containerDefinitions[${idx}].secrets[] | select(.name==\"AWS_ACCESS_KEY\") | .name")
+  case "${AWS_ACCESS_KEY_FOUND}" in
+    *AWS_ACCESS_KEY* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
+    * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
+  esac
+  # find AWS_ACCESS_KEY_ID
+  printf "       ${COLOR_DEFAULT}- AWS_ACCESS_KEY_ID"
+  AWS_ACCESS_KEY_ID_FOUND=$(echo "${taskDefJson}" | jq -r "try .taskDefinition.containerDefinitions[${idx}].secrets[] | select(.name==\"AWS_ACCESS_KEY_ID\") | .name")
+  case "${AWS_ACCESS_KEY_ID_FOUND}" in
+    *AWS_ACCESS_KEY_ID* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
+    * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
+  esac  
+  # find AWS_SECRET_ACCESS_KEY
+  printf "       ${COLOR_DEFAULT}- AWS_SECRET_ACCESS_KEY"
+  AWS_SECRET_ACCESS_KEY_FOUND=$(echo "${taskDefJson}" | jq -r "try .taskDefinition.containerDefinitions[${idx}].secrets[] | select(.name==\"AWS_SECRET_ACCESS_KEY\") | .name")
+  case "${AWS_SECRET_ACCESS_KEY_FOUND}" in
+    *AWS_SECRET_ACCESS_KEY* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
+    * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
+  esac
+  # find AWS_EXECUTION_ENV
+  printf "       ${COLOR_DEFAULT}- AWS_EXECUTION_ENV"
+  AWS_EXECUTION_ENV_FOUND=$(echo "${taskDefJson}" | jq -r "try .taskDefinition.containerDefinitions[${idx}].secrets[] | select(.name==\"AWS_EXECUTION_ENV\") | .name")
+  case "${AWS_EXECUTION_ENV_FOUND}" in
+    *AWS_EXECUTION_ENV* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
+    * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
+  esac
+  # find AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
+  printf "       ${COLOR_DEFAULT}- AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
+  AWS_CONTAINER_CREDENTIALS_RELATIVE_URI_FOUND=$(echo "${taskDefJson}" | jq -r "try .taskDefinition.containerDefinitions[${idx}].secrets[] | select(.name==\"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI\") | .name")
+  case "${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI_FOUND}" in
+    *AWS_CONTAINER_CREDENTIALS_RELATIVE_URI* ) printf ": ${COLOR_YELLOW}defined${COLOR_DEFAULT}\n";;
+    * ) printf ": ${COLOR_GREEN}not defined${COLOR_DEFAULT}\n";;
+  esac
+
   idx=$((idx+1))
 done
 
