@@ -34,6 +34,7 @@ set -euo pipefail
 ##             "Action": [
 ##                 "iam:GetInstanceProfile",
 ##                 "iam:SimulatePrincipalPolicy",
+##                 "iam:ListRoles",
 ##                 "ec2:DescribeSubnets",
 ##                 "ec2:DescribeVpcEndpoints",
 ##                 "ecs:DescribeClusters",
