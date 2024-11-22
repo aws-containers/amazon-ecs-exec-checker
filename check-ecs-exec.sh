@@ -635,7 +635,7 @@ if [[ "${taskNetworkingAttachment}" = "null" ]]; then
   subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
 else
   ## awsvpc networking (for both EC2 and Fargate)
-  taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0].details[] | select(.name==\"subnetId\") | .value")
+  taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[].details[] | select(.name==\"subnetId\") | .value")
   subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
   taskVpcId=$(echo "${subnetJson}" | jq -r ".Subnets[0].VpcId")
 fi
