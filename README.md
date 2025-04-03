@@ -128,6 +128,8 @@ The `check-ecs-exec.sh` doesn't support checking this item for shared VPC subnet
 19. **🟡 Environment Variables : defined**  
 SSM uses the AWS SDK which uses the [default chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default) when determining authentication. This means if AWS_ACCESS_KEY, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY are defined in the environment variables and the permissions there do not provide the required permissions for SSM to work, then the execute-command will fail. It is recomended not to define these environment variables. 
 
+20. **🟡 PidMode : task**  
+If you are [sharing a PID namespace in a task](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#other_task_definition_params), you can only start ECS Exec sessions into one container. See the "Considerations for using ECS Exec" in [the ECS official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-considerations) for more details.
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
