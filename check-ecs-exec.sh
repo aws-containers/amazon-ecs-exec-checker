@@ -419,7 +419,7 @@ if [[ "${executeCommandEnabled}" = "false" ]]; then
 else
   printf "\n"
   printf "${COLOR_DEFAULT}    ----------\n"
-  agentsStatus=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[].managedAgents[].lastStatus")
+  agentsStatus=$(echo "${describedTaskJson}" | jq -r '.tasks[0].containers[] | select(.managedAgents) | .managedAgents[].lastStatus')
   idx=0
   for _ in $agentsStatus; do
     containerName=$(echo "${describedTaskJson}" | jq -r ".tasks[0].containers[${idx}].name")
