@@ -627,7 +627,7 @@ fi
 # If there is any VPC Endpoints configured for the task VPC, we assume you would need an additional SSM PrivateLink to be configured. (yellow)
 # TODO: In the ideal world, the script should simply check if the task can reach to the internet or not :)
 requiredEndpoint="com.amazonaws.${AWS_REGION}.ssmmessages"
-taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0]")
+taskNetworkingAttachment=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments | map(select(.type==\"ElasticNetworkInterface\"))[0]")
 if [[ "${taskNetworkingAttachment}" = "null" ]]; then
   ## bridge/host networking (only for EC2)
   taskVpcId=$(echo "${describedContainerInstanceJson}" | jq -r ".containerInstances[0].attributes[] | select(.name==\"ecs.vpc-id\") | .value")
@@ -635,7 +635,7 @@ if [[ "${taskNetworkingAttachment}" = "null" ]]; then
   subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
 else
   ## awsvpc networking (for both EC2 and Fargate)
-  taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments[0].details[] | select(.name==\"subnetId\") | .value")
+  taskSubnetId=$(echo "${describedTaskJson}" | jq -r ".tasks[0].attachments | map(select(.type==\"ElasticNetworkInterface\"))[0].details[] | select(.name==\"subnetId\") | .value")
   subnetJson=$(${AWS_CLI_BIN} ec2 describe-subnets --subnet-ids "${taskSubnetId}")
   taskVpcId=$(echo "${subnetJson}" | jq -r ".Subnets[0].VpcId")
 fi
