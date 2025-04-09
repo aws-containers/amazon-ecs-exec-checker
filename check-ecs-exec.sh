@@ -714,4 +714,15 @@ for containerName in $containerNameList; do
   idx=$((idx+1))
 done
 
+# 12. Check PID mode
+pidMode=$(echo "${taskDefJson}" | jq -r ".taskDefinition.pidMode")
+printf "${COLOR_DEFAULT}  PidMode                | "
+if [[ ${pidMode} = "task" ]]; then
+  printf "${COLOR_YELLOW}${pidMode} \n"
+elif [[ ${pidMode} = "host" ]]; then
+  printf "${COLOR_GREEN}${pidMode} \n"
+else
+  printf "${COLOR_GREEN}Not Configured \n"
+fi
+
 printf "\n"
