@@ -130,6 +130,7 @@ SSM uses the AWS SDK which uses the [default chain](https://docs.aws.amazon.com/
 
 20. **🟡 PidMode : task**  
 If you are [sharing a PID namespace in a task](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#other_task_definition_params), you can only start ECS Exec sessions into one container. See the "Considerations for using ECS Exec" in [the ECS official documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-considerations) for more details.
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
